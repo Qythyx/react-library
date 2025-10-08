@@ -98,7 +98,17 @@ const DataTableComponent = <T extends object>({
 	persistenceKey,
 	totalCount,
 }: DataTableProps<T>): React.ReactElement => {
-	const { t } = useTranslation();
+	const { t, i18n } = useTranslation();
+
+	// Add library translations on mount
+	useEffect(() => {
+		void import('../../public/locales/en/translation.json').then((en: { translation: Record<string, unknown> }) => {
+			i18n.addResourceBundle('en', 'translation', en.translation, true, false);
+		});
+		void import('../../public/locales/ja/translation.json').then((ja: { translation: Record<string, unknown> }) => {
+			i18n.addResourceBundle('ja', 'translation', ja.translation, true, false);
+		});
+	}, [i18n]);
 
 	const getKey = (area: string): string => `${persistenceKey}-table-${area}`;
 

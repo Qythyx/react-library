@@ -16,8 +16,9 @@
 		"skipLibCheck": true,
 		"noImplicitAny": true,
 		"noUncheckedIndexedAccess": true,
-		"composite": true
+		"composite": true,
+		"resolveJsonModule": true
 	},
-	"include": ["src/**/*"],
+	"include": ["src/**/*", "public/**/*"],
 	"exclude": ["node_modules", "dist"]
 }
