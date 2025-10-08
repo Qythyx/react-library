@@ -1,0 +1,17 @@
+{
+	"translation": {
+		"dataTable": {
+			"emptyMessage": "データが見つかりません。",
+			"goToPage": "ページへ移動",
+			"itemsPerPage": "1ページあたりの件数",
+			"list": {
+				"itemsPerPage": "1ページあたりの件数",
+				"next": "次へ",
+				"previous": "前へ",
+				"showAll": "すべて",
+				"total": "全{{count}}件"
+			},
+			"sortBy": "{{label}}で並び替え"
+		}
+	}
+}

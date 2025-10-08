@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//Users/rainer/Projects/beerbox/beerbox/src/webapp/**)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

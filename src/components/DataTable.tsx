@@ -238,7 +238,7 @@ const DataTableComponent = <T extends object>({
 							}}
 							tabIndex={col.isSortable ? 0 : undefined}
 							role={col.isSortable ? 'button' : undefined}
-							aria-label={col.isSortable ? t('common.dataTable.sortBy', { label: col.label }) : undefined}
+							aria-label={col.isSortable ? t('dataTable.sortBy', { label: col.label }) : undefined}
 						>
 							<Box
 								sx={{
@@ -284,7 +284,7 @@ const DataTableComponent = <T extends object>({
 					<TableRow>
 						<TableCell colSpan={columns.length} align="center">
 							<Typography variant="body2" color="text.secondary" fontStyle="italic">
-								{emptyMessage ?? t('common.dataTable.emptyMessage')}
+								{emptyMessage ?? t('dataTable.emptyMessage')}
 							</Typography>
 						</TableCell>
 					</TableRow>
@@ -388,7 +388,7 @@ const DataTableComponent = <T extends object>({
 				}}
 			>
 				<Typography variant="body2" color="text.secondary">
-					{t('common.dataTable.list.total', { count: totalCount })}
+					{t('dataTable.list.total', { count: totalCount })}
 				</Typography>
 
 				<Stack direction="row" spacing={1} alignItems="center">
@@ -398,7 +398,7 @@ const DataTableComponent = <T extends object>({
 								onClick={handlePreviousPage}
 								disabled={isLoading || currentPage <= 1}
 								size="small"
-								aria-label={t('common.dataTable.list.previous')}
+								aria-label={t('dataTable.list.previous')}
 							>
 								<NavigateBefore />
 							</IconButton>
@@ -408,7 +408,7 @@ const DataTableComponent = <T extends object>({
 								slotProps={{
 									htmlInput: { pattern: '[0-9]*' },
 									input: {
-										'aria-label': t('common.dataTable.goToPage'),
+										'aria-label': t('dataTable.goToPage'),
 										inputProps: {
 											max: totalPages,
 											min: 1,
@@ -425,7 +425,7 @@ const DataTableComponent = <T extends object>({
 								onClick={handleNextPage}
 								disabled={isLoading || currentPage >= totalPages}
 								size="small"
-								aria-label={t('common.dataTable.list.next')}
+								aria-label={t('dataTable.list.next')}
 							>
 								<NavigateNext />
 							</IconButton>
@@ -437,14 +437,14 @@ const DataTableComponent = <T extends object>({
 					{!paginationSettings.showAll && (
 						<Stack direction="row" spacing={1} alignItems="center">
 							<Typography variant="body2" color="text.secondary">
-								{t('common.dataTable.list.itemsPerPage')}
+								{t('dataTable.list.itemsPerPage')}
 							</Typography>
 							<NumberField
 								value={pageSize}
 								onChange={e => setPageSize(e)}
 								slotProps={{
 									input: {
-										'aria-label': t('common.dataTable.itemsPerPage'),
+										'aria-label': t('dataTable.itemsPerPage'),
 										inputProps: {
 											min: 1,
 										},
@@ -466,7 +466,7 @@ const DataTableComponent = <T extends object>({
 						}
 						label={
 							<Typography variant="body2" color="text.secondary">
-								{t('common.dataTable.list.showAll')}
+								{t('dataTable.list.showAll')}
 							</Typography>
 						}
 					/>
