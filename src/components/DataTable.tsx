@@ -16,10 +16,10 @@ import {
 } from '@mui/material';
 import { KeyboardArrowDown, KeyboardArrowUp, NavigateBefore, NavigateNext } from '@mui/icons-material';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { i18n } from 'i18next';
 import { NumberField } from './NumberField';
 import { useDebounce } from '../hooks/useDebounce';
 import { useLocalStorage } from '../hooks/useLocalStorage';
-import { useTranslation } from 'react-i18next';
 
 export type ColumnSize = 'fill' | 'minimum';
 
@@ -64,6 +64,7 @@ export interface DataTableProps<T> {
 	emptyMessage?: string;
 	fullWidth?: boolean;
 	groups?: Group[];
+	i18n: i18n;
 	isLoading?: boolean;
 	onLoad: (params: LoadParams<T>) => void;
 	onRowClick?: (rowIndex: number) => void;
@@ -92,21 +93,28 @@ const DataTableComponent = <T extends object>({
 	emptyMessage,
 	fullWidth = true,
 	groups,
+	i18n,
 	isLoading = false,
 	onLoad,
 	onRowClick,
 	persistenceKey,
 	totalCount,
 }: DataTableProps<T>): React.ReactElement => {
-	const { t, i18n } = useTranslation();
+	const { t } = i18n;
+	const [, forceUpdate] = useState({});
 
 	// Add library translations on mount
 	useEffect(() => {
-		void import('../../public/locales/en/translation.json').then((en: { translation: Record<string, unknown> }) => {
-			i18n.addResourceBundle('en', 'translation', en.translation, true, false);
-		});
-		void import('../../public/locales/ja/translation.json').then((ja: { translation: Record<string, unknown> }) => {
-			i18n.addResourceBundle('ja', 'translation', ja.translation, true, false);
+		Promise.all([
+			import('../../public/locales/en/translation.json').then((en: { translation: Record<string, unknown> }) => {
+				i18n.addResourceBundle('en', 'translation', en.translation, true, false);
+			}),
+			import('../../public/locales/ja/translation.json').then((ja: { translation: Record<string, unknown> }) => {
+				i18n.addResourceBundle('ja', 'translation', ja.translation, true, false);
+			}),
+		]).then(() => {
+			// Force re-render after translations are loaded
+			forceUpdate({});
 		});
 	}, [i18n]);
 
@@ -266,7 +274,7 @@ const DataTableComponent = <T extends object>({
 				</TableRow>
 			</TableHead>
 		),
-		[columns, handleSortColumn, getColumnStyles, getSortIcon, t],
+		[columns, handleSortColumn, getColumnStyles, getSortIcon, i18n],
 	);
 
 	// Memoize table body rendering

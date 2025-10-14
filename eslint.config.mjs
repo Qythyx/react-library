@@ -1,3 +1,4 @@
+import { defineConfig } from 'eslint/config';
 import eslint from '@eslint/js';
 import eslintPluginPrettier from 'eslint-plugin-prettier';
 import globals from 'globals';
@@ -10,10 +11,12 @@ import stylistic from '@stylistic/eslint-plugin';
 import tseslint from 'typescript-eslint';
 import validateTranslationKeys from './eslint-rules/validate-translation-keys.js';
 
-export default tseslint.config(
+export default defineConfig(
 	{
 		ignores: ['**/generated/**'],
 	},
+	eslint.configs.recommended,
+	tseslint.configs.recommended,
 	prettier,
 	jsdoc.configs['flat/recommended-typescript'],
 	{
@@ -82,10 +85,6 @@ export default tseslint.config(
 			'sort-keys': 'error',
 		},
 	},
-	...[...tseslint.configs.stylisticTypeChecked, ...tseslint.configs.recommendedTypeChecked].map(config => ({
-		...config,
-		files: ['**/*.{ts,tsx}'],
-	})),
 	{
 		files: ['**/*.{ts,tsx}'],
 		languageOptions: {
