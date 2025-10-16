@@ -1,5 +1,5 @@
+import React, { useEffect, useState } from 'react';
 import { TextField, TextFieldProps } from '@mui/material';
-import React from 'react';
 
 interface NumberFieldProps extends Omit<TextFieldProps, 'onChange' | 'placeholder' | 'type' | 'inputMode' | 'value'> {
 	decimalPlaces?: number;
@@ -13,25 +13,30 @@ export function NumberField({
 	value,
 	...textFieldProps
 }: NumberFieldProps): React.ReactElement {
-	const pattern = decimalPlaces > 0 ? `[0-9]*\\.?[0-9]{0,${decimalPlaces}}` : '[0-9]*';
+	const pattern = new RegExp(decimalPlaces > 0 ? `^[0-9]*\\.?[0-9]{0,${decimalPlaces}}$` : '^[0-9]*$');
+	const [displayValue, setDisplayValue] = useState(value === '' ? '' : String(value));
+
+	// Sync display value when the value prop changes externally
+	useEffect(() => {
+		setDisplayValue(value === '' ? '' : String(value));
+	}, [value]);
 
 	const handleChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
 		const inputValue = e.target.value;
+
 		if (inputValue === '') {
+			setDisplayValue('');
 			onChange(0);
 			return;
 		}
 
-		if (decimalPlaces > 0) {
-			const numValue = parseFloat(inputValue);
-			if (!isNaN(numValue)) {
-				onChange(numValue);
+		const numValue = decimalPlaces > 0 ? parseFloat(inputValue) : parseInt(inputValue);
+		if (!isNaN(numValue) && pattern.test(inputValue)) {
+			setDisplayValue(inputValue);
+			if (decimalPlaces > 0 && inputValue.endsWith('.')) {
+				return;
 			}
-		} else {
-			const numValue = parseInt(inputValue);
-			if (!isNaN(numValue)) {
-				onChange(numValue);
-			}
+			onChange(numValue);
 		}
 	};
 
@@ -41,14 +46,8 @@ export function NumberField({
 			inputMode="numeric"
 			onChange={handleChange}
 			type="text"
-			value={value}
-			slotProps={{
-				...textFieldProps.slotProps,
-				htmlInput: {
-					...textFieldProps.slotProps?.htmlInput,
-					pattern,
-				},
-			}}
+			value={displayValue}
+			slotProps={textFieldProps.slotProps}
 		/>
 	);
 }
