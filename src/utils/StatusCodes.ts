@@ -22,6 +22,8 @@ export enum HttpStatus {
 
 export function getStatusMessage(status: HttpStatus, defaultMessage: string): string {
 	switch (status) {
+		case HttpStatus.NOT_FOUND:
+			return 'The requested resource was not found';
 		case HttpStatus.UNAUTHORIZED:
 			return 'You do not have authorization';
 		default:
