@@ -16,3 +16,4 @@ export { useLocalStorage } from './hooks/useLocalStorage';
 // Utils
 export { HttpStatus, getStatusMessage } from './utils/StatusCodes';
 export type { ApiResponse, OkResponse, BadResponse } from './utils/types';
+export { stringifySorted } from './utils/SortedStringifier';
