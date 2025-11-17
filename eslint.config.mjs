@@ -110,6 +110,7 @@ export default defineConfig(
 				},
 			],
 			'@typescript-eslint/no-explicit-any': 'error',
+			'@typescript-eslint/no-unnecessary-condition': 'warn',
 			'@typescript-eslint/no-unsafe-member-access': 'error',
 		},
 	},
