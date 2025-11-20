@@ -40,7 +40,7 @@
 		"eslint-plugin-prettier": "^5.5.4",
 		"eslint-plugin-react": "^7.37.5",
 		"jest": "^30.2.0",
-		"semantic-release": "^24.2.7",
+		"semantic-release": "^24.2.9",
 		"ts-jest": "^29.4.4",
 		"ts-node": "^10.9.2",
 		"typescript": "^5.9.2",
