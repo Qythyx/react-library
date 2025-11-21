@@ -1,6 +1,6 @@
 {
 	"name": "@qythyx/react-library",
-	"version": "1.0.4",
+	"version": "1.0.5",
 	"description": "Reusable React library projects",
 	"main": "src/index.ts",
 	"types": "src/index.ts",
