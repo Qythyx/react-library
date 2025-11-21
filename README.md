@@ -1,6 +1,6 @@
 # Beerbox UI Library
 
-A reusable React component and hooks library for beerbox projects, built with TypeScript, Material-UI, and i18next.
+A reusable React component and hooks library built with TypeScript, Material-UI, and i18next.
 
 ## Features
 
@@ -40,7 +40,7 @@ A reusable React component and hooks library for beerbox projects, built with Ty
 }
 ```
 
-2. Install dependencies:
+1. Install dependencies:
 
 ```bash
 npm install
@@ -48,7 +48,7 @@ npm install
 
 ### As Git Submodule
 
-```bash
+```sh
 # In your project root
 git submodule add https://github.com/your-org/beerbox-ui-library packages/ui-library
 git submodule update --init --recursive
