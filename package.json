@@ -2,8 +2,8 @@
 	"name": "@qythyx/react-library",
 	"version": "1.0.8",
 	"description": "Reusable React library projects",
-	"main": "src/index.ts",
-	"types": "src/index.ts",
+	"main": "./dist/index.js",
+	"types": "./dist/index.d.ts",
 	"exports": {
 		".": {
 			"types": "./dist/index.d.ts",
@@ -15,6 +15,8 @@
 	],
 	"scripts": {
 		"build": "tsc",
+		"build:tsc": "tsc",
+		"build:tsc:watch": "tsc --watch",
 		"build:watch": "tsc --watch",
 		"clean": "rm -rf dist tsconfig.tsbuildinfo",
 		"lint": "eslint src",
