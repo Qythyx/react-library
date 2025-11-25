@@ -31,6 +31,15 @@ jobs:
           node-version: "22"
           registry-url: "https://npm.pkg.github.com"
 
+      - name: Update lock file if needed
+        run: |
+          npm install --package-lock-only
+          if [ -n "$(git status --porcelain package-lock.json)" ]; then
+            git add package-lock.json
+            git commit -m "chore: update package-lock.json [skip ci]"
+            git push
+          fi
+
       - name: Install dependencies
         run: npm ci
 
