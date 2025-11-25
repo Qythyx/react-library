@@ -12,6 +12,7 @@ export type { ThumbnailRef } from './components/Thumbnail';
 export { useApiAction } from './hooks/useApiAction';
 export { useDebounce } from './hooks/useDebounce';
 export { useLocalStorage } from './hooks/useLocalStorage';
+export { useRequiredParams } from './hooks/useRequiredParams';
 
 // Utils
 export { HttpStatus, getStatusMessage } from './utils/StatusCodes';
