@@ -21,9 +21,9 @@ import { NumberField } from './NumberField';
 import { useDebounce } from '../hooks/useDebounce';
 import { useLocalStorage } from '../hooks/useLocalStorage';
 
-export type ColumnSize = 'fill' | 'minimum';
+type ColumnSize = 'fill' | 'minimum';
 
-export interface BaseColumn {
+interface BaseColumn {
 	align?: 'center' | 'left' | 'right' | undefined;
 	label: string;
 	size?: ColumnSize;
@@ -31,12 +31,12 @@ export interface BaseColumn {
 
 export type SortableFields<T> = Exclude<keyof T, 'id'>;
 
-export interface SortableColumn<T> extends BaseColumn {
+interface SortableColumn<T> extends BaseColumn {
 	isSortable: true;
 	key: SortableFields<T>;
 }
 
-export interface NonSortableColumn extends BaseColumn {
+interface NonSortableColumn extends BaseColumn {
 	isSortable: false;
 	key: string;
 }

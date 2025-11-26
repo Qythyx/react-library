@@ -2,7 +2,6 @@ import { defineConfig } from 'eslint/config';
 import eslint from '@eslint/js';
 import eslintPluginPrettier from 'eslint-plugin-prettier';
 import globals from 'globals';
-import html from 'eslint-plugin-html';
 import jestDom from 'eslint-plugin-jest-dom';
 import jsdoc from 'eslint-plugin-jsdoc';
 import prettier from 'eslint-config-prettier';
@@ -32,9 +31,8 @@ export default defineConfig(
 				...globals.browser,
 			},
 			parserOptions: {
-				ecmaFeatures: {
-					jsx: true,
-				},
+				ecmaFeatures: { jsx: true },
+				tsconfigRootDir: import.meta.dirname,
 			},
 		},
 		plugins: {
@@ -44,7 +42,6 @@ export default defineConfig(
 					'validate-translation-keys': validateTranslationKeys,
 				},
 			},
-			html,
 			jestDom,
 			jsdoc,
 			prettier: eslintPluginPrettier,
@@ -95,6 +92,7 @@ export default defineConfig(
 			},
 			parserOptions: {
 				project: 'tsconfig.json',
+				tsconfigRootDir: import.meta.dirname,
 			},
 			sourceType: 'module',
 		},
