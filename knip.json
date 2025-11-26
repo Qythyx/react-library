@@ -1,6 +1,0 @@
-{
-	"entry": ["src/index.ts"],
-	"semantic-release": {
-		"config": ["release.config.mjs"]
-	}
-}
