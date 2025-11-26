@@ -1,7 +1,15 @@
 {
   "permissions": {
     "allow": [
-      "Read(//Users/rainer/Projects/beerbox/beerbox/src/webapp/**)"
+      "Read(//Users/rainer/Projects/beerbox/beerbox/src/webapp/**)",
+      "Bash(npm install:*)",
+      "Bash(npm run lint)",
+      "Bash(npx eslint:*)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:typescript-eslint.io)",
+      "Bash(npm uninstall:*)",
+      "WebSearch",
+      "WebFetch(domain:stackoverflow.com)"
     ],
     "deny": [],
     "ask": []

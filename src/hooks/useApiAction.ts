@@ -1,5 +1,5 @@
-import { ApiResponse } from '../utils/types';
-import { getStatusMessage } from '../utils/StatusCodes';
+import { ApiResponse } from '../utils/types.ts';
+import { getStatusMessage } from '../utils/StatusCodes.ts';
 import { useCallback } from 'react';
 
 export const useApiAction = (

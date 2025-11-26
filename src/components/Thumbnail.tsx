@@ -1,7 +1,7 @@
 import * as Icons from '@mui/icons-material';
 import { Box, SxProps, Theme } from '@mui/material';
 import React, { ReactNode, useCallback, useEffect, useRef, useState } from 'react';
-import { ImageModal } from './ImageModal';
+import { ImageModal } from './ImageModal.ts';
 
 interface ThumbnailProps {
 	alt?: string;

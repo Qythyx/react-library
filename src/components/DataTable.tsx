@@ -17,9 +17,9 @@ import {
 import { KeyboardArrowDown, KeyboardArrowUp, NavigateBefore, NavigateNext } from '@mui/icons-material';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { i18n } from 'i18next';
-import { NumberField } from './NumberField';
-import { useDebounce } from '../hooks/useDebounce';
-import { useLocalStorage } from '../hooks/useLocalStorage';
+import { NumberField } from './NumberField.ts';
+import { useDebounce } from '../hooks/useDebounce.ts';
+import { useLocalStorage } from '../hooks/useLocalStorage.ts';
 
 type ColumnSize = 'fill' | 'minimum';
 
@@ -106,11 +106,11 @@ const DataTableComponent = <T extends object>({
 	// Add library translations on mount
 	useEffect(() => {
 		Promise.all([
-			import('../../public/locales/en/translation.json').then((en: { translation: Record<string, unknown> }) => {
-				i18n.addResourceBundle('en', 'translation', en.translation, true, false);
+			import('../../public/locales/en/translation.json').then(en => {
+				i18n.addResourceBundle('en', 'translation', en.default.translation, true, false);
 			}),
-			import('../../public/locales/ja/translation.json').then((ja: { translation: Record<string, unknown> }) => {
-				i18n.addResourceBundle('ja', 'translation', ja.translation, true, false);
+			import('../../public/locales/ja/translation.json').then(ja => {
+				i18n.addResourceBundle('ja', 'translation', ja.default.translation, true, false);
 			}),
 		]).then(() => {
 			// Force re-render after translations are loaded
