@@ -2,7 +2,7 @@ import { Column, DataTable, Group } from './DataTable.js';
 import { render, screen, waitFor } from '../test-utils/testUtils.js';
 import { createMockI18n } from '../test-utils/i18nMock.js';
 import React from 'react';
-import userEvent from '@testing-library/user-event';
+import { userEvent } from '@testing-library/user-event';
 
 interface TestRow {
 	id: number;
@@ -82,7 +82,9 @@ describe('DataTable', () => {
 	describe('Sorting', () => {
 		it('should sort ascending when clicking sortable column header', async () => {
 			const user = userEvent.setup();
-			render(<DataTable<TestRow> columns={mockColumns} data={mockData} i18n={i18n} onLoad={onLoad} totalCount={3} />);
+			render(
+				<DataTable<TestRow> columns={mockColumns} data={mockData} i18n={i18n} onLoad={onLoad} totalCount={3} />,
+			);
 
 			await waitFor(() => {
 				expect(screen.getByText('Name')).toBeInTheDocument();
@@ -103,7 +105,9 @@ describe('DataTable', () => {
 
 		it('should toggle sort direction when clicking same column twice', async () => {
 			const user = userEvent.setup();
-			render(<DataTable<TestRow> columns={mockColumns} data={mockData} i18n={i18n} onLoad={onLoad} totalCount={3} />);
+			render(
+				<DataTable<TestRow> columns={mockColumns} data={mockData} i18n={i18n} onLoad={onLoad} totalCount={3} />,
+			);
 
 			await waitFor(() => {
 				expect(screen.getByText('Name')).toBeInTheDocument();
@@ -135,7 +139,9 @@ describe('DataTable', () => {
 
 		it('should change sort column when clicking different column', async () => {
 			const user = userEvent.setup();
-			render(<DataTable<TestRow> columns={mockColumns} data={mockData} i18n={i18n} onLoad={onLoad} totalCount={3} />);
+			render(
+				<DataTable<TestRow> columns={mockColumns} data={mockData} i18n={i18n} onLoad={onLoad} totalCount={3} />,
+			);
 
 			await waitFor(() => {
 				expect(screen.getByText('Name')).toBeInTheDocument();
@@ -169,7 +175,13 @@ describe('DataTable', () => {
 			const user = userEvent.setup();
 			const manyData = Array.from({ length: 15 }, (_, i) => [`Person ${i}`, `${20 + i}`]);
 			render(
-				<DataTable<TestRow> columns={mockColumns} data={manyData} i18n={i18n} onLoad={onLoad} totalCount={150} />,
+				<DataTable<TestRow>
+					columns={mockColumns}
+					data={manyData}
+					i18n={i18n}
+					onLoad={onLoad}
+					totalCount={150}
+				/>,
 			);
 
 			await waitFor(() => {
@@ -192,7 +204,13 @@ describe('DataTable', () => {
 			const user = userEvent.setup();
 			const manyData = Array.from({ length: 15 }, (_, i) => [`Person ${i}`, `${20 + i}`]);
 			render(
-				<DataTable<TestRow> columns={mockColumns} data={manyData} i18n={i18n} onLoad={onLoad} totalCount={150} />,
+				<DataTable<TestRow>
+					columns={mockColumns}
+					data={manyData}
+					i18n={i18n}
+					onLoad={onLoad}
+					totalCount={150}
+				/>,
 			);
 
 			await waitFor(() => {
@@ -220,7 +238,13 @@ describe('DataTable', () => {
 
 		it('should render page size selector', async () => {
 			const { container } = render(
-				<DataTable<TestRow> columns={mockColumns} data={mockData} i18n={i18n} onLoad={onLoad} totalCount={50} />,
+				<DataTable<TestRow>
+					columns={mockColumns}
+					data={mockData}
+					i18n={i18n}
+					onLoad={onLoad}
+					totalCount={50}
+				/>,
 			);
 
 			await waitFor(() => {

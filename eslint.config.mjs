@@ -12,7 +12,7 @@ import validateTranslationKeys from './eslint-rules/validate-translation-keys.js
 
 export default defineConfig(
 	{
-		ignores: ['**/generated/**'],
+		ignores: ['**/generated/**', 'jest.config.ts'],
 	},
 	eslint.configs.recommended,
 	tseslint.configs.recommended,

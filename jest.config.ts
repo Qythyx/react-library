@@ -188,8 +188,8 @@ const config: Config = {
 			'ts-jest',
 			{
 				tsconfig: {
-					module: 'commonjs',
 					jsx: 'react',
+					module: 'commonjs',
 				},
 			},
 		],
