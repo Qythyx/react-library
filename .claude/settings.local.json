@@ -16,7 +16,9 @@
       "Bash(npm run build:dist:*)",
       "Bash(npm run build:*)",
       "Bash(npm run clean:*)",
-      "Bash(npx jest:*)"
+      "Bash(npx jest:*)",
+      "Bash(npx npm-check-updates:*)",
+      "Bash(npm view:*)"
     ],
     "deny": [],
     "ask": []

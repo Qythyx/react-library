@@ -12,7 +12,7 @@ export type { ThumbnailRef } from './components/Thumbnail.ts';
 export { useApiAction } from './hooks/useApiAction.ts';
 export { useDebounce } from './hooks/useDebounce.ts';
 export { useLocalStorage } from './hooks/useLocalStorage.ts';
-export { useRequiredParams } from './hooks/useRequiredParams.ts';
+export { type ParamTypeRegistry, useRequiredParams } from './hooks/useRequiredParams.ts';
 
 // Utils
 export { HttpStatus, getStatusMessage } from './utils/StatusCodes.ts';
