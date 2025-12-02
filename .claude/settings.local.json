@@ -9,7 +9,14 @@
       "WebFetch(domain:typescript-eslint.io)",
       "Bash(npm uninstall:*)",
       "WebSearch",
-      "WebFetch(domain:stackoverflow.com)"
+      "WebFetch(domain:stackoverflow.com)",
+      "Bash(find:*)",
+      "Bash(cat:*)",
+      "Bash(npm test:*)",
+      "Bash(npm run build:dist:*)",
+      "Bash(npm run build:*)",
+      "Bash(npm run clean:*)",
+      "Bash(npx jest:*)"
     ],
     "deny": [],
     "ask": []

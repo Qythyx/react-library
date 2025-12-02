@@ -1,0 +1,16 @@
+{
+	"extends": "./tsconfig.json",
+	"include": [
+		"src/**/*",
+		"public/**/*"
+	],
+	"exclude": [
+		"node_modules",
+		"dist",
+		"**/*.test.ts",
+		"**/*.test.tsx",
+		"src/test-utils/**/*",
+		"__mocks__/**/*",
+		"jest.setup.js"
+	]
+}

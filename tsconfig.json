@@ -22,11 +22,13 @@
 		"skipLibCheck": true,
 		"noImplicitAny": true,
 		"noUncheckedIndexedAccess": true,
-		"resolveJsonModule": true
+		"resolveJsonModule": true,
+		"types": ["jest", "@testing-library/jest-dom"],
+		"isolatedModules": true
 	},
 	"include": [
 		"src/**/*",
-		"public/**/*"
+		"public/**/*",
 	],
 	"exclude": [
 		"node_modules",

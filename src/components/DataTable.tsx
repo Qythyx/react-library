@@ -17,9 +17,9 @@ import {
 import { KeyboardArrowDown, KeyboardArrowUp, NavigateBefore, NavigateNext } from '@mui/icons-material';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { i18n } from 'i18next';
-import { NumberField } from './NumberField.ts';
-import { useDebounce } from '../hooks/useDebounce.ts';
-import { useLocalStorage } from '../hooks/useLocalStorage.ts';
+import { NumberField } from './NumberField.js';
+import { useDebounce } from '../hooks/useDebounce.js';
+import { useLocalStorage } from '../hooks/useLocalStorage.js';
 
 type ColumnSize = 'fill' | 'minimum';
 

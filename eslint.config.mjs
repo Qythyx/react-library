@@ -84,6 +84,7 @@ export default defineConfig(
 	},
 	{
 		files: ['**/*.{ts,tsx}'],
+		ignores: ['**/*.test.{ts,tsx}', '**/test-utils/**'],
 		languageOptions: {
 			ecmaVersion: 'latest',
 			globals: {
@@ -110,6 +111,22 @@ export default defineConfig(
 			'@typescript-eslint/no-explicit-any': 'error',
 			'@typescript-eslint/no-unnecessary-condition': 'warn',
 			'@typescript-eslint/no-unsafe-member-access': 'error',
+		},
+	},
+	{
+		files: ['**/*.test.{ts,tsx}', '**/test-utils/**/*.{ts,tsx}', 'jest.setup.js'],
+		languageOptions: {
+			ecmaVersion: 'latest',
+			globals: {
+				...globals.browser,
+				...globals.node,
+				...globals.jest,
+			},
+			parserOptions: {
+				project: 'tsconfig.json',
+				tsconfigRootDir: import.meta.dirname,
+			},
+			sourceType: 'module',
 		},
 	},
 );

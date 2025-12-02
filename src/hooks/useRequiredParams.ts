@@ -1,7 +1,23 @@
 import { useParams } from 'react-router-dom';
 
+/**
+ * This is intentionally empty to allow users to extend it with their own param types.
+ * @example
+ * In your project, create a types file like the following:
+	declare module '@qythyx/react-library' {
+		interface ParamTypeRegistry {
+		venueId: VenueID;
+		// Add more as needed
+		}
+	}
+ */
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
+export interface ParamTypeRegistry {
+	// Default - all strings
+}
+
 type ParamValues<T extends readonly string[]> = {
-	[K in T[number]]: string;
+	[K in T[number]]: K extends keyof ParamTypeRegistry ? ParamTypeRegistry[K] : string;
 };
 
 /**
@@ -23,7 +39,7 @@ export function useRequiredParams<T extends readonly string[]>(requiredParams: T
 		if (!value) {
 			missingParams.push(paramName);
 		} else {
-			result[paramName as T[number]] = value;
+			result[paramName as T[number]] = value as ParamValues<T>[T[number]];
 		}
 	}
 

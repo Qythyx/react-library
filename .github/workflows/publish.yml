@@ -46,8 +46,11 @@ jobs:
       - name: Lint
         run: npm run lint
 
+      - name: Test
+        run: npm test
+
       - name: Build
-        run: npm run build
+        run: npm run build:dist
 
       - name: Release and Publish
         env:

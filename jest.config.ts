@@ -22,7 +22,15 @@ const config: Config = {
 	collectCoverage: true,
 
 	// An array of glob patterns indicating a set of files for which coverage information should be collected
-	collectCoverageFrom: ['**/src/**/*.{js,jsx,ts,tsx}', '!**/node_modules/**'],
+	collectCoverageFrom: [
+		'**/src/**/*.{js,jsx,ts,tsx}',
+		'!**/node_modules/**',
+		'!**/*.test.{ts,tsx}',
+		'!**/*.spec.{ts,tsx}',
+		'!**/src/index.ts',
+		'!**/src/test-utils/**',
+		'!**/src/utils/types.ts',
+	],
 
 	// The directory where Jest should output its coverage files
 	coverageDirectory: 'coverage',
@@ -39,7 +47,14 @@ const config: Config = {
 	coverageReporters: ['text', 'lcov'],
 
 	// An object that configures minimum threshold enforcement for coverage results
-	// coverageThreshold: undefined,
+	coverageThreshold: {
+		global: {
+			branches: 80,
+			functions: 80,
+			lines: 80,
+			statements: 80,
+		},
+	},
 
 	// A path to a custom dependency extractor
 	// dependencyExtractor: undefined,
@@ -87,6 +102,7 @@ const config: Config = {
 	// A map from regular expressions to module names or to arrays of module names that allow to stub out resources with a single module
 	moduleNameMapper: {
 		'(.+)\\.js': '$1',
+		'^.*\\.json$': '<rootDir>/__mocks__/fileMock.js',
 	},
 
 	// An array of regexp pattern strings, matched against all module paths before considered 'visible' to the module loader
@@ -134,7 +150,7 @@ const config: Config = {
 	// setupFiles: [],
 
 	// A list of paths to modules that run some code to configure or set up the testing framework before each test
-	// setupFilesAfterEnv: [],
+	setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
 
 	// The number of seconds after which a test is considered as slow and reported as such in the results.
 	// slowTestThreshold: 5,
@@ -143,7 +159,7 @@ const config: Config = {
 	// snapshotSerializers: [],
 
 	// The test environment that will be used for testing
-	// testEnvironment: "jest-environment-node",
+	testEnvironment: 'jsdom',
 
 	// Options that will be passed to the testEnvironment
 	// testEnvironmentOptions: {},
@@ -167,7 +183,17 @@ const config: Config = {
 	// testRunner: "jest-circus/runner",
 
 	// A map from regular expressions to paths to transformers
-	transform: {},
+	transform: {
+		'^.+\\.tsx?$': [
+			'ts-jest',
+			{
+				tsconfig: {
+					module: 'commonjs',
+					jsx: 'react',
+				},
+			},
+		],
+	},
 
 	// An array of regexp pattern strings that are matched against all source file paths, matched files will skip transformation
 	// transformIgnorePatterns: [
