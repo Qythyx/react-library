@@ -1,4 +1,4 @@
-# Beerbox UI Library
+# React Library
 
 A reusable React component and hooks library built with TypeScript, Material-UI, and i18next.
 
@@ -23,61 +23,6 @@ A reusable React component and hooks library built with TypeScript, Material-UI,
 - **HttpStatus** - HTTP status code enum
 - **getStatusMessage** - Convert status codes to user-friendly messages
 - **ApiResponse** - TypeScript types for API responses
-
-## Installation
-
-### As npm Workspace (Development)
-
-1. Add the library to your project's workspace:
-
-```json
-// package.json
-{
-  "workspaces": ["../../packages/*"],
-  "dependencies": {
-    "@beerbox/ui-library": "workspace:*"
-  }
-}
-```
-
-1. Install dependencies:
-
-```bash
-npm install
-```
-
-### As Git Submodule
-
-```sh
-# In your project root
-git submodule add https://github.com/your-org/beerbox-ui-library packages/ui-library
-git submodule update --init --recursive
-```
-
-## Usage
-
-```tsx
-import {
-  DataTable,
-  DateField,
-  NumberField,
-  useApiAction,
-  useDebounce
-} from '@beerbox/ui-library';
-
-// Using DataTable
-<DataTable
-  columns={columns}
-  data={data}
-  totalCount={totalCount}
-  onLoad={handleLoad}
-  persistenceKey="my-table"
-/>
-
-// Using hooks
-const { executeAction } = useApiAction(setError, setIsLoading);
-const [debouncedValue, setValue] = useDebounce(initialValue, 400);
-```
 
 ## Development
 

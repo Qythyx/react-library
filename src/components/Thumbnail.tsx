@@ -9,7 +9,7 @@ interface ThumbnailProps {
 	noImageIcon?: ReactNode | undefined;
 	onImageClick?: ((imageUrl: string, event: React.MouseEvent<HTMLElement, MouseEvent>) => void) | undefined | null;
 	onNoImageClick?: React.MouseEventHandler<HTMLElement> | undefined;
-	sx: SxProps<Theme> | undefined;
+	sx?: SxProps<Theme> | undefined;
 }
 
 export interface ThumbnailRef {

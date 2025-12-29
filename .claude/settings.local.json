@@ -1,7 +1,6 @@
 {
   "permissions": {
     "allow": [
-      "Read(//Users/rainer/Projects/beerbox/beerbox/src/webapp/**)",
       "Bash(npm install:*)",
       "Bash(npm run lint)",
       "Bash(npx eslint:*)",
