@@ -9,9 +9,17 @@ interface ImageModalProps {
 }
 
 export function ImageModal({ imageUrl, isOpen, onClose }: ImageModalProps): React.ReactElement {
+	// Stop propagation to prevent clicks from bubbling up the React component tree.
+	// Even though the Modal renders in a portal, React synthetic events still bubble
+	// through the React tree, which would trigger parent onClick handlers (like DataTable rows).
+	const handleClick = (e: React.MouseEvent): void => {
+		e.stopPropagation();
+	};
+
 	return (
 		<Modal
 			open={isOpen}
+			onClick={handleClick}
 			onClose={onClose}
 			sx={{
 				alignItems: 'center',
