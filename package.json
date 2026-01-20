@@ -6,11 +6,13 @@
 		".": {
 			"types": "./dist/index.d.ts",
 			"import": "./dist/index.js"
-		}
+		},
+		"./eslint-rules/*": "./eslint-rules/*.js"
 	},
 	"files": [
 		"dist",
-		"public/locales"
+		"public/locales",
+		"eslint-rules"
 	],
 	"scripts": {
 		"build": "tsc",
