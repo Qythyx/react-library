@@ -5,39 +5,36 @@
  * actually exist in the translation JSON files.
  */
 
-import { fileURLToPath } from 'url';
 import fs from 'fs';
 import path from 'path';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-const TranslationsPath = '../public/locales';
+import process from 'process';
 
 // Cache translation files to avoid reading them multiple times
-let translationCache;
-let cacheTimestamp;
+let translationCache = new Map();
+let cacheTimestamp = new Map();
 
-function loadTranslations() {
+function loadTranslations(translationsPath) {
+	const translationsDir = path.resolve(process.cwd(), translationsPath);
 	const latest = Math.max(
 		...fs
-			.readdirSync(path.resolve(__dirname, TranslationsPath))
+			.readdirSync(translationsDir)
 			.map(locale =>
 				fs
-					.readdirSync(path.resolve(__dirname, TranslationsPath, locale))
-					.map(file => fs.statSync(path.resolve(__dirname, TranslationsPath, locale, file)).mtimeMs),
+					.readdirSync(path.resolve(translationsDir, locale))
+					.map(file => fs.statSync(path.resolve(translationsDir, locale, file)).mtimeMs),
 			)
 			.flat(),
 	);
-	if (!translationCache || latest > cacheTimestamp) {
+	const cacheKey = translationsPath;
+	if (!translationCache.has(cacheKey) || latest > cacheTimestamp.get(cacheKey)) {
 		const translationsPerLocale = new Map();
-		const locales = fs.readdirSync(path.resolve(__dirname, TranslationsPath));
-		console.log('Loaded locales for translation validation:', locales);
+		const locales = fs.readdirSync(translationsDir);
+		console.log(`Loaded locales for translation validation from "${translationsPath}":`, locales);
 
 		for (const locale of locales) {
 			try {
 				const translations = JSON.parse(
-					fs.readFileSync(path.resolve(__dirname, TranslationsPath, locale, 'translation.json'), 'utf8'),
+					fs.readFileSync(path.resolve(translationsDir, locale, 'translation.json'), 'utf8'),
 				);
 
 				// Flatten the nested translation keys and store both key and value
@@ -64,10 +61,10 @@ function loadTranslations() {
 				throw error;
 			}
 		}
-		translationCache = translationsPerLocale;
-		cacheTimestamp = latest;
+		translationCache.set(cacheKey, translationsPerLocale);
+		cacheTimestamp.set(cacheKey, latest);
 	}
-	return translationCache;
+	return translationCache.get(cacheKey);
 }
 
 // Extract placeholder variables from a translation string (e.g., "{{name}}" -> ["name"])
@@ -103,7 +100,8 @@ function extractObjectProperties(objectExpression) {
 
 export default {
 	create(context) {
-		const translations = loadTranslations();
+		const options = context.options[0] || {};
+		const translations = loadTranslations(options.translationsPath || 'public/locales');
 
 		return {
 			CallExpression(node) {
@@ -214,7 +212,18 @@ export default {
 			missingParameters: "Translation key '{{key}}' requires parameters {{required}} but got {{provided}}",
 			noParametersNeeded: "Translation key '{{key}}' does not use parameters but parameters were provided",
 		},
-		schema: [],
+		schema: [
+			{
+				additionalProperties: false,
+				properties: {
+					translationsPath: {
+						description: 'Path to the locales directory relative to the project root',
+						type: 'string',
+					},
+				},
+				type: 'object',
+			},
+		],
 		type: 'problem',
 	},
 };
