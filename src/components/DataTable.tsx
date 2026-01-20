@@ -107,10 +107,10 @@ const DataTableComponent = <T extends object>({
 	useEffect(() => {
 		Promise.all([
 			import('../../public/locales/en/translation.json').then(en => {
-				i18n.addResourceBundle('en', 'translation', en.default.translation, true, false);
+				i18n.addResourceBundle('en', 'translation', en.default, true, false);
 			}),
 			import('../../public/locales/ja/translation.json').then(ja => {
-				i18n.addResourceBundle('ja', 'translation', ja.default.translation, true, false);
+				i18n.addResourceBundle('ja', 'translation', ja.default, true, false);
 			}),
 		]).then(() => {
 			// Force re-render after translations are loaded

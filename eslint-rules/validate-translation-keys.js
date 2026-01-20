@@ -55,7 +55,7 @@ function loadTranslations(translationsPath) {
 					return result;
 				}
 
-				translationsPerLocale.set(locale, flattenKeysWithValues(translations.translation));
+				translationsPerLocale.set(locale, flattenKeysWithValues(translations));
 			} catch (error) {
 				console.warn(`Could not load ${locale} translation files for validation:`, error.message);
 				throw error;
