@@ -64,6 +64,6 @@ export const DateField = React.memo(function DateField({
 			slotProps={{ htmlInput: { max: '9999-12-31' + (dateOnly ? '' : 'T23:59') }, inputLabel: { shrink: true } }}
 		/>
 	) : (
-		<>{formatForDisplay(value)}</>
+		<span>{formatForDisplay(value)}</span>
 	);
 });
