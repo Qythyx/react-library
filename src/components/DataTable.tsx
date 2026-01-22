@@ -397,7 +397,7 @@ const DataTableComponent = <T extends object>({
 					sx={{
 						borderBottom: 1,
 						borderColor: 'divider',
-						p: 1,
+						p: 0,
 					}}
 				>
 					{header}
