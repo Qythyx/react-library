@@ -28,11 +28,47 @@ describe('DataTable', () => {
 		jest.clearAllMocks();
 	});
 
-	it('should render column headers', async () => {
+	it('should render column headers with string labels', async () => {
 		render(<DataTable<TestRow> columns={mockColumns} data={mockData} i18n={i18n} onLoad={onLoad} totalCount={3} />);
 
 		await waitFor(() => {
 			expect(screen.getByText('Name')).toBeInTheDocument();
+		});
+	});
+
+	it('should render column headers with element labels', async () => {
+		const columnsWithElements: Column<TestRow>[] = [
+			{ isSortable: true, key: 'name', label: <span>Name Element</span> },
+			{ isSortable: true, key: 'age', label: <strong>Age Element</strong> },
+		];
+		render(
+			<DataTable<TestRow>
+				columns={columnsWithElements}
+				data={mockData}
+				i18n={i18n}
+				onLoad={onLoad}
+				totalCount={3}
+			/>,
+		);
+
+		await waitFor(() => {
+			expect(screen.getByText('Name Element')).toBeInTheDocument();
+			expect(screen.getByText('Age Element')).toBeInTheDocument();
+		});
+	});
+
+	it('should render column headers with mixed string and element labels', async () => {
+		const mixedColumns: Column<TestRow>[] = [
+			{ isSortable: true, key: 'name', label: 'Name String' },
+			{ isSortable: true, key: 'age', label: <em>Age Element</em> },
+		];
+		render(
+			<DataTable<TestRow> columns={mixedColumns} data={mockData} i18n={i18n} onLoad={onLoad} totalCount={3} />,
+		);
+
+		await waitFor(() => {
+			expect(screen.getByText('Name String')).toBeInTheDocument();
+			expect(screen.getByText('Age Element')).toBeInTheDocument();
 		});
 	});
 

@@ -25,7 +25,7 @@ type ColumnSize = 'fill' | 'minimum';
 
 interface BaseColumn {
 	align?: 'center' | 'left' | 'right' | undefined;
-	label: string;
+	label: string | React.ReactElement;
 	size?: ColumnSize;
 }
 
@@ -256,7 +256,11 @@ const DataTableComponent = <T extends object>({
 							}}
 							tabIndex={col.isSortable ? 0 : undefined}
 							role={col.isSortable ? 'button' : undefined}
-							aria-label={col.isSortable ? t('dataTable.sortBy', { label: col.label }) : undefined}
+							aria-label={
+								col.isSortable && typeof col.label === 'string'
+									? t('dataTable.sortBy', { label: col.label })
+									: undefined
+							}
 						>
 							<Box
 								sx={{

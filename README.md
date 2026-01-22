@@ -33,9 +33,21 @@ npm run build        # Build once
 npm run build:watch  # Watch mode
 ```
 
-### Iterating Locally
+### Submitting Updates
 
-When using as a workspace, changes to the library are immediately available in consuming projects. Just rebuild the library and your project will pick up the changes.
+Make sure all commits include a [Semantic Release](https://github.com/semantic-release/semantic-release) compatible
+description like the following:
+
+- Fix Release — `fix(pencil): stop graphite breaking when too much pressure applied`
+- Feature Release — `feat(pencil): add 'graphiteWidth' option`
+- Breaking Change (note that `BREAKING CHANGE:` must be in the footer of the comment)
+
+    ```txt
+    perf(pencil): remove graphiteWidth option
+
+    BREAKING CHANGE: The graphiteWidth option has been removed.
+    The default graphite width of 10mm is always used for performance reasons.
+    ```
 
 ## Peer Dependencies
 
