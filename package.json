@@ -1,6 +1,6 @@
 {
 	"name": "@qythyx/react-library",
-	"version": "1.4.0",
+	"version": "1.4.1",
 	"description": "Reusable React library projects",
 	"exports": {
 		".": {
