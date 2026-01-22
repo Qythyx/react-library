@@ -64,6 +64,7 @@ export interface DataTableProps<T> {
 	emptyMessage?: string;
 	fullWidth?: boolean;
 	groups?: Group[];
+	header?: React.ReactElement;
 	i18n: i18n;
 	isLoading?: boolean;
 	onLoad: (params: LoadParams<T>) => void;
@@ -93,6 +94,7 @@ const DataTableComponent = <T extends object>({
 	emptyMessage,
 	fullWidth = true,
 	groups,
+	header,
 	i18n,
 	isLoading = false,
 	onLoad,
@@ -389,6 +391,19 @@ const DataTableComponent = <T extends object>({
 
 	return (
 		<Card sx={{ display: 'flex', flexDirection: 'column', width: fullWidth ? '100%' : 'fit-content' }}>
+			{/* Optional Header */}
+			{header && (
+				<Box
+					sx={{
+						borderBottom: 1,
+						borderColor: 'divider',
+						p: 1,
+					}}
+				>
+					{header}
+				</Box>
+			)}
+
 			<TableContainer sx={{ overflowY: 'auto' }}>
 				<Table sx={{ tableLayout: 'auto' }} stickyHeader>
 					{tableHeader}

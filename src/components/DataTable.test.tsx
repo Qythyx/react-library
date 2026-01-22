@@ -417,4 +417,36 @@ describe('DataTable', () => {
 			});
 		});
 	});
+
+	describe('Header', () => {
+		it('should render header when provided', async () => {
+			const header = <div>Custom Header Content</div>;
+			render(
+				<DataTable<TestRow>
+					columns={mockColumns}
+					data={mockData}
+					header={header}
+					i18n={i18n}
+					onLoad={onLoad}
+					totalCount={3}
+				/>,
+			);
+
+			await waitFor(() => {
+				expect(screen.getByText('Custom Header Content')).toBeInTheDocument();
+			});
+		});
+
+		it('should not render header when not provided', async () => {
+			render(
+				<DataTable<TestRow> columns={mockColumns} data={mockData} i18n={i18n} onLoad={onLoad} totalCount={3} />,
+			);
+
+			await waitFor(() => {
+				expect(screen.getByText('Name')).toBeInTheDocument();
+			});
+
+			expect(screen.queryByText('Custom Header Content')).not.toBeInTheDocument();
+		});
+	});
 });
