@@ -14,7 +14,7 @@ import {
 	TableRow,
 	Typography,
 } from '@mui/material';
-import { i18n } from 'i18next';
+import { i18n, TFunction } from 'i18next';
 import { KeyboardArrowDown, KeyboardArrowUp, NavigateBefore, NavigateNext } from '@mui/icons-material';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 
@@ -31,7 +31,8 @@ export interface DataTableProps<T> {
 	fullWidth?: boolean;
 	groups?: Group[];
 	header?: React.ReactElement;
-	i18n: i18n;
+	i18n?: i18n;
+	initialPageSize?: number;
 	isLoading?: boolean;
 	loadingIndicatorDelay?: number;
 	onLoad: (params: LoadParams<T>) => void;
@@ -98,36 +99,39 @@ const DataTableComponent = <T extends object>({
 	groups,
 	header,
 	i18n,
+	initialPageSize = 20,
 	isLoading = false,
-	loadingIndicatorDelay = 600,
+	loadingIndicatorDelay = 200,
 	onLoad,
 	onRowClick,
 	persistenceKey,
 	totalCount,
 }: DataTableProps<T>): React.ReactElement => {
-	const { t } = i18n;
+	const { t } = i18n ?? { t: ((key: string): string => key) as TFunction };
 	const [, forceUpdate] = useState({});
 
 	// Add library translations on mount
-	useEffect(() => {
-		Promise.all([
-			import('../../public/locales/en/translation.json').then(en => {
-				i18n.addResourceBundle('en', 'translation', en.default, true, false);
-			}),
-			import('../../public/locales/ja/translation.json').then(ja => {
-				i18n.addResourceBundle('ja', 'translation', ja.default, true, false);
-			}),
-		]).then(() => {
-			// Force re-render after translations are loaded
-			forceUpdate({});
-		});
-	}, [i18n]);
+	if (i18n) {
+		useEffect(() => {
+			Promise.all([
+				import('../../public/locales/en/translation.json').then(en => {
+					i18n.addResourceBundle('en', 'translation', en.default, true, false);
+				}),
+				import('../../public/locales/ja/translation.json').then(ja => {
+					i18n.addResourceBundle('ja', 'translation', ja.default, true, false);
+				}),
+			]).then(() => {
+				// Force re-render after translations are loaded
+				forceUpdate({});
+			});
+		}, [i18n]);
+	}
 
 	const getKey = (area: string): string => `${persistenceKey}-table-${area}`;
 
 	// Persistent settings with both getters and setters
 	const [paginationSettings, setPaginationSettings] = useLocalStorage(getKey('pagination'), {
-		pageSize: 20,
+		pageSize: initialPageSize,
 		showAll: false,
 	});
 
@@ -286,19 +290,89 @@ const DataTableComponent = <T extends object>({
 		[columns, handleSortColumn, getColumnStyles, getSortIcon, i18n],
 	);
 
+	const renderGroupedRows = useMemo(
+		() =>
+			(groups ?? []).map(group => (
+				<React.Fragment key={group.key}>
+					<GroupRow actions={group.actions} colSpan={columns.length}>
+						{group.header}
+					</GroupRow>
+					{group.rows.map(rowIndex => {
+						const row = data[rowIndex];
+						if (!row) {
+							return null;
+						}
+						return (
+							<TableRow
+								hover
+								key={`row-${rowIndex}`}
+								onClick={onRowClick ? (): void => onRowClick(rowIndex) : undefined}
+								sx={{
+									cursor: onRowClick ? 'pointer' : 'default',
+								}}
+							>
+								{row.map((cell, cellIndex) => (
+									<TableCell
+										align={columns[cellIndex]?.align}
+										key={`cell-${rowIndex}-${cellIndex}`}
+										sx={{
+											...getColumnStyles(columns[cellIndex]?.size),
+										}}
+									>
+										{cell}
+									</TableCell>
+								))}
+							</TableRow>
+						);
+					})}
+				</React.Fragment>
+			)),
+		[columns, data, groups, onRowClick],
+	);
+
+	const renderEmptyTable = useMemo(
+		() => (
+			<TableRow>
+				<TableCell align="center" colSpan={columns.length}>
+					<Typography color="text.secondary" fontStyle="italic" variant="body2">
+						{emptyMessage ?? t('dataTable.emptyMessage')}
+					</Typography>
+				</TableCell>
+			</TableRow>
+		),
+		[columns, emptyMessage, t],
+	);
+
+	const renderRows = useMemo(
+		() =>
+			data.map((row, rowIndex) => (
+				<TableRow
+					hover
+					key={`row-${rowIndex}`}
+					onClick={onRowClick ? (): void => onRowClick(rowIndex) : undefined}
+					sx={{
+						cursor: onRowClick ? 'pointer' : 'default',
+					}}
+				>
+					{row.map((cell, cellIndex) => (
+						<TableCell
+							align={columns[cellIndex]?.align}
+							key={`cell-${rowIndex}-${cellIndex}`}
+							sx={{
+								...getColumnStyles(columns[cellIndex]?.size),
+							}}
+						>
+							{cell}
+						</TableCell>
+					))}
+				</TableRow>
+			)),
+		[columns, data, onRowClick],
+	);
+
 	// Memoize table body rendering
 	const tableBody = useMemo(
-		() => (
-			<TableBody>
-				{showLoadingIndicator
-					? renderLoadingIndicator()
-					: data.length === 0
-						? renderEmptyTable()
-						: groups
-							? renderGroupedRows(groups)
-							: renderRows()}
-			</TableBody>
-		),
+		() => <TableBody>{data.length === 0 ? renderEmptyTable : groups ? renderGroupedRows : renderRows}</TableBody>,
 		[
 			data,
 			columns,
@@ -313,220 +387,144 @@ const DataTableComponent = <T extends object>({
 	);
 
 	return (
-		<Card sx={{ display: 'flex', flexDirection: 'column', width: fullWidth ? '100%' : 'fit-content' }}>
-			{/* Optional Header */}
-			{header && (
-				<Box
-					sx={{
-						borderBottom: 1,
-						borderColor: 'divider',
-						p: 0,
-					}}
-				>
-					{header}
-				</Box>
-			)}
-
-			<TableContainer sx={{ overflowY: 'auto' }}>
-				<Table stickyHeader sx={{ tableLayout: 'auto' }}>
-					{tableHeader}
-					{tableBody}
-				</Table>
-			</TableContainer>
-
-			{/* Pagination Footer */}
-			<Box
-				sx={{
-					alignItems: 'center',
-					borderColor: 'divider',
-					borderTop: 1,
-					display: 'flex',
-					flexWrap: 'wrap',
-					gap: 1,
-					justifyContent: 'space-between',
-					p: 1,
-				}}
-			>
-				<Typography color="text.secondary" variant="body2">
-					{t('dataTable.list.total', { count: totalCount })}
-				</Typography>
-
-				<Stack alignItems="center" direction="row" spacing={1}>
-					{!paginationSettings.showAll && (
-						<>
-							<IconButton
-								aria-label={t('dataTable.list.previous')}
-								disabled={isLoading || currentPage <= 1}
-								onClick={handlePreviousPage}
-								size="small"
-							>
-								<NavigateBefore />
-							</IconButton>
-							<NumberField
-								onChange={e => setCurrentPage(Math.max(1, Math.min(totalPages, e)))}
-								size="small"
-								slotProps={{
-									htmlInput: { pattern: '[0-9]*' },
-									input: {
-										'aria-label': t('dataTable.goToPage'),
-										inputProps: {
-											max: totalPages,
-											min: 1,
-										},
-									},
-								}}
-								sx={{ width: '5em' }}
-								value={currentPage}
-							/>
-							<Typography color="text.secondary" variant="body2">
-								/ {totalPages}
-							</Typography>
-							<IconButton
-								aria-label={t('dataTable.list.next')}
-								disabled={isLoading || currentPage >= totalPages}
-								onClick={handleNextPage}
-								size="small"
-							>
-								<NavigateNext />
-							</IconButton>
-						</>
-					)}
-				</Stack>
-
-				<Stack alignItems="center" direction="row" spacing={2}>
-					{!paginationSettings.showAll && (
-						<Stack alignItems="center" direction="row" spacing={1}>
-							<Typography color="text.secondary" variant="body2">
-								{t('dataTable.list.itemsPerPage')}
-							</Typography>
-							<NumberField
-								onChange={e => setPageSize(e)}
-								size="small"
-								slotProps={{
-									input: {
-										'aria-label': t('dataTable.itemsPerPage'),
-										inputProps: {
-											min: 1,
-										},
-									},
-								}}
-								sx={{ width: '5em' }}
-								value={pageSize}
-							/>
-						</Stack>
-					)}
-
-					<FormControlLabel
-						control={
-							<Checkbox
-								checked={paginationSettings.showAll}
-								onChange={e => handleShowAllChange(e.target.checked)}
-								size="small"
-							/>
-						}
-						label={
-							<Typography color="text.secondary" variant="body2">
-								{t('dataTable.list.showAll')}
-							</Typography>
-						}
-					/>
-				</Stack>
-			</Box>
-		</Card>
-	);
-
-	function renderRows(): React.ReactNode {
-		return data.map((row, rowIndex) => (
-			<TableRow
-				hover
-				key={`row-${rowIndex}`}
-				onClick={onRowClick ? (): void => onRowClick(rowIndex) : undefined}
-				sx={{
-					cursor: onRowClick ? 'pointer' : 'default',
-				}}
-			>
-				{row.map((cell, cellIndex) => (
-					<TableCell
-						align={columns[cellIndex]?.align}
-						key={`cell-${rowIndex}-${cellIndex}`}
+		<Box sx={{ position: 'relative' }}>
+			<Card sx={{ display: 'flex', flexDirection: 'column', width: fullWidth ? '100%' : 'fit-content' }}>
+				{/* Optional Header */}
+				{header && (
+					<Box
 						sx={{
-							...getColumnStyles(columns[cellIndex]?.size),
+							borderBottom: 1,
+							borderColor: 'divider',
+							p: 0,
 						}}
 					>
-						{cell}
-					</TableCell>
-				))}
-			</TableRow>
-		));
-	}
+						{header}
+					</Box>
+				)}
 
-	function renderGroupedRows(groups: Group[]): React.ReactNode {
-		return groups.map(group => (
-			<React.Fragment key={group.key}>
-				<GroupRow actions={group.actions} colSpan={columns.length}>
-					{group.header}
-				</GroupRow>
-				{group.rows.map(rowIndex => {
-					const row = data[rowIndex];
-					if (!row) {
-						return null;
-					}
-					return (
-						<TableRow
-							hover
-							key={`row-${rowIndex}`}
-							onClick={onRowClick ? (): void => onRowClick(rowIndex) : undefined}
-							sx={{
-								cursor: onRowClick ? 'pointer' : 'default',
-							}}
-						>
-							{row.map((cell, cellIndex) => (
-								<TableCell
-									align={columns[cellIndex]?.align}
-									key={`cell-${rowIndex}-${cellIndex}`}
-									sx={{
-										...getColumnStyles(columns[cellIndex]?.size),
-									}}
-								>
-									{cell}
-								</TableCell>
-							))}
-						</TableRow>
-					);
-				})}
-			</React.Fragment>
-		));
-	}
+				<TableContainer sx={{ overflowY: 'auto' }}>
+					<Table stickyHeader sx={{ tableLayout: 'auto' }}>
+						{tableHeader}
+						{tableBody}
+					</Table>
+				</TableContainer>
 
-	function renderLoadingIndicator(): React.ReactNode {
-		return (
-			<Box
-				sx={{
-					alignItems: 'center',
-					backgroundColor: 'rgba(255, 255, 255, 0.7)',
-					display: 'flex',
-					inset: 0,
-					justifyContent: 'center',
-					position: 'absolute',
-					zIndex: 1,
-				}}
-			>
-				<CircularProgress />
-			</Box>
-		);
-	}
-
-	function renderEmptyTable(): React.ReactNode {
-		return (
-			<TableRow>
-				<TableCell align="center" colSpan={columns.length}>
-					<Typography color="text.secondary" fontStyle="italic" variant="body2">
-						{emptyMessage ?? t('dataTable.emptyMessage')}
+				{/* Pagination Footer */}
+				<Box
+					sx={{
+						alignItems: 'center',
+						borderColor: 'divider',
+						borderTop: 1,
+						display: 'flex',
+						flexWrap: 'wrap',
+						gap: 1,
+						justifyContent: 'space-between',
+						p: 1,
+					}}
+				>
+					<Typography color="text.secondary" variant="body2">
+						{t('dataTable.list.total', { count: totalCount })}
 					</Typography>
-				</TableCell>
-			</TableRow>
-		);
-	}
+
+					<Stack alignItems="center" direction="row" spacing={1}>
+						{!paginationSettings.showAll && (
+							<>
+								<IconButton
+									aria-label={t('dataTable.list.previous')}
+									disabled={isLoading || currentPage <= 1}
+									onClick={handlePreviousPage}
+									size="small"
+								>
+									<NavigateBefore />
+								</IconButton>
+								<NumberField
+									onChange={e => setCurrentPage(Math.max(1, Math.min(totalPages, e)))}
+									size="small"
+									slotProps={{
+										htmlInput: { pattern: '[0-9]*' },
+										input: {
+											'aria-label': t('dataTable.goToPage'),
+											inputProps: {
+												max: totalPages,
+												min: 1,
+											},
+										},
+									}}
+									sx={{ width: '5em' }}
+									value={currentPage}
+								/>
+								<Typography color="text.secondary" variant="body2">
+									/ {totalPages}
+								</Typography>
+								<IconButton
+									aria-label={t('dataTable.list.next')}
+									disabled={isLoading || currentPage >= totalPages}
+									onClick={handleNextPage}
+									size="small"
+								>
+									<NavigateNext />
+								</IconButton>
+							</>
+						)}
+					</Stack>
+
+					<Stack alignItems="center" direction="row" spacing={2}>
+						{!paginationSettings.showAll && (
+							<Stack alignItems="center" direction="row" spacing={1}>
+								<Typography color="text.secondary" variant="body2">
+									{t('dataTable.list.itemsPerPage')}
+								</Typography>
+								<NumberField
+									onChange={e => setPageSize(e)}
+									size="small"
+									slotProps={{
+										input: {
+											'aria-label': t('dataTable.itemsPerPage'),
+											inputProps: {
+												min: 1,
+											},
+										},
+									}}
+									sx={{ width: '5em' }}
+									value={pageSize}
+								/>
+							</Stack>
+						)}
+
+						<FormControlLabel
+							control={
+								<Checkbox
+									checked={paginationSettings.showAll}
+									onChange={e => handleShowAllChange(e.target.checked)}
+									size="small"
+								/>
+							}
+							label={
+								<Typography color="text.secondary" variant="body2">
+									{t('dataTable.list.showAll')}
+								</Typography>
+							}
+						/>
+					</Stack>
+				</Box>
+			</Card>
+			{showLoadingIndicator && (
+				<Box
+					sx={{
+						alignItems: 'center',
+						backgroundColor: 'rgba(255, 255, 255, 0.7)',
+						display: 'flex',
+						inset: 0,
+						justifyContent: 'center',
+						position: 'absolute',
+						zIndex: 100,
+					}}
+				>
+					<CircularProgress />
+				</Box>
+			)}
+		</Box>
+	);
 };
 
 export const DataTable = React.memo(DataTableComponent) as typeof DataTableComponent;

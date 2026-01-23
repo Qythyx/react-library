@@ -1,45 +1,6 @@
 {
-	"name": "@qythyx/react-library",
-	"version": "1.5.0",
+	"author": "",
 	"description": "Reusable React library projects",
-	"exports": {
-		".": {
-			"types": "./dist/index.d.ts",
-			"import": "./dist/index.js"
-		},
-		"./eslint-rules/*": "./eslint-rules/*.js"
-	},
-	"files": [
-		"dist",
-		"public/locales",
-		"eslint-rules"
-	],
-	"scripts": {
-		"build": "tsc",
-		"build:dist": "tsc -p tsconfig.build.json",
-		"build:tsc": "tsc",
-		"build:tsc:watch": "tsc --watch",
-		"build:watch": "tsc --watch",
-		"clean": "rm -rf dist tsconfig.tsbuildinfo",
-		"depcheck": "knip && npm-check-updates -u --dep dev,peer,prod --target latest --pre 0",
-		"lint": "eslint src",
-		"lint:fix": "eslint src --fix",
-		"test": "jest",
-		"test:watch": "jest --watch",
-		"test:coverage": "jest --coverage"
-	},
-	"peerDependencies": {
-		"@emotion/react": "^11.14.0",
-		"@emotion/styled": "^11.14.1",
-		"@mui/icons-material": "^7.3.5",
-		"@mui/material": "^7.3.5",
-		"i18next": "^25.7.1",
-		"react": "^19.2.0",
-		"react-dom": "^19.2.0",
-		"react-i18next": "^16.3.5",
-		"react-modal": "^3.16.3",
-		"react-router-dom": "^7.9.6"
-	},
 	"devDependencies": {
 		"@eslint/js": "^9.39.1",
 		"@semantic-release/git": "^10.0.1",
@@ -49,6 +10,8 @@
 		"@testing-library/user-event": "^14.6.1",
 		"@types/jest": "^30.0.0",
 		"@types/react": "^19.2.7",
+		"@types/react-dom": "^19.2.3",
+		"@vitejs/plugin-react": "^5.1.2",
 		"eslint": "^9.39.1",
 		"eslint-config-prettier": "^10.1.8",
 		"eslint-plugin-jest-dom": "^5.5.0",
@@ -64,8 +27,21 @@
 		"semantic-release": "^25.0.2",
 		"ts-jest": "^29.4.6",
 		"typescript": "^5.9.3",
-		"typescript-eslint": "^8.48.0"
+		"typescript-eslint": "^8.48.0",
+		"vite": "^7.3.1"
 	},
+	"exports": {
+		".": {
+			"import": "./dist/index.js",
+			"types": "./dist/index.d.ts"
+		},
+		"./eslint-rules/*": "./eslint-rules/*.js"
+	},
+	"files": [
+		"dist",
+		"public/locales",
+		"eslint-rules"
+	],
 	"keywords": [
 		"react",
 		"components",
@@ -73,10 +49,38 @@
 		"mui",
 		"material-ui"
 	],
-	"author": "",
 	"license": "MIT",
+	"name": "@qythyx/react-library",
+	"peerDependencies": {
+		"@emotion/react": "^11.14.0",
+		"@emotion/styled": "^11.14.1",
+		"@mui/icons-material": "^7.3.5",
+		"@mui/material": "^7.3.5",
+		"i18next": "^25.7.1",
+		"react": "^19.2.0",
+		"react-dom": "^19.2.0",
+		"react-i18next": "^16.3.5",
+		"react-modal": "^3.16.3",
+		"react-router-dom": "^7.9.6"
+	},
 	"publishConfig": {
 		"registry": "https://npm.pkg.github.com"
 	},
-	"type": "module"
+	"scripts": {
+		"build": "tsc",
+		"build:dist": "tsc -p tsconfig.build.json",
+		"build:tsc": "tsc",
+		"build:tsc:watch": "tsc --watch",
+		"build:watch": "tsc --watch",
+		"clean": "rm -rf dist tsconfig.tsbuildinfo",
+		"depcheck": "knip && npm-check-updates -u --dep dev,peer,prod --target latest --pre 0",
+		"dev": "vite",
+		"lint": "eslint src",
+		"lint:fix": "eslint src --fix",
+		"test": "jest",
+		"test:coverage": "jest --coverage",
+		"test:watch": "jest --watch"
+	},
+	"type": "module",
+	"version": "1.5.0"
 }

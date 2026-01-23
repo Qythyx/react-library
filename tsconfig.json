@@ -25,13 +25,15 @@
 		"resolveJsonModule": true,
 		"types": [
 			"jest",
-			"@testing-library/jest-dom"
+			"@testing-library/jest-dom",
+			"react",
+			"react-dom"
 		],
 		"isolatedModules": true
 	},
 	"include": [
-		"src/**/*",
 		"public/**/*",
+		"src/**/*",
 	],
 	"exclude": [
 		"node_modules",

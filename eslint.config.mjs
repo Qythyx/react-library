@@ -134,4 +134,16 @@ export default defineConfig(
 			sourceType: 'module',
 		},
 	},
+	// Also lint config, test, and dev files outside of src
+	...tseslint.configs.recommendedTypeChecked.map(config => ({
+		...config,
+		files: ['*.ts', 'dev/*.{ts,tsx}'],
+		languageOptions: {
+			...config.languageOptions,
+			parserOptions: {
+				...config.languageOptions?.parserOptions,
+				project: './tsconfig.dev.json',
+			},
+		},
+	})),
 );

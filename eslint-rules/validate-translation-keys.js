@@ -13,6 +13,37 @@ import process from 'process';
 let translationCache = new Map();
 let cacheTimestamp = new Map();
 
+// Extract parameter names from an object expression (e.g., { name: value, count: 5 })
+function extractObjectProperties(objectExpression) {
+	if (objectExpression.type !== 'ObjectExpression') {
+		return null;
+	}
+
+	const properties = [];
+	for (const prop of objectExpression.properties) {
+		if (prop.type === 'Property' && prop.key.type === 'Identifier') {
+			properties.push(prop.key.name);
+		} else if (prop.type === 'Property' && prop.key.type === 'Literal') {
+			properties.push(prop.key.value);
+		}
+	}
+
+	return properties;
+}
+
+// Extract placeholder variables from a translation string (e.g., "{{name}}" -> ["name"])
+function extractPlaceholders(translationString) {
+	const placeholderRegex = /\{\{([^}]+)\}\}/g;
+	const placeholders = [];
+	let match;
+
+	while ((match = placeholderRegex.exec(translationString)) !== null) {
+		placeholders.push(match[1].trim());
+	}
+
+	return placeholders;
+}
+
 function loadTranslations(translationsPath) {
 	const translationsDir = path.resolve(process.cwd(), translationsPath);
 	const latest = Math.max(
@@ -65,37 +96,6 @@ function loadTranslations(translationsPath) {
 		cacheTimestamp.set(cacheKey, latest);
 	}
 	return translationCache.get(cacheKey);
-}
-
-// Extract placeholder variables from a translation string (e.g., "{{name}}" -> ["name"])
-function extractPlaceholders(translationString) {
-	const placeholderRegex = /\{\{([^}]+)\}\}/g;
-	const placeholders = [];
-	let match;
-
-	while ((match = placeholderRegex.exec(translationString)) !== null) {
-		placeholders.push(match[1].trim());
-	}
-
-	return placeholders;
-}
-
-// Extract parameter names from an object expression (e.g., { name: value, count: 5 })
-function extractObjectProperties(objectExpression) {
-	if (objectExpression.type !== 'ObjectExpression') {
-		return null;
-	}
-
-	const properties = [];
-	for (const prop of objectExpression.properties) {
-		if (prop.type === 'Property' && prop.key.type === 'Identifier') {
-			properties.push(prop.key.name);
-		} else if (prop.type === 'Property' && prop.key.type === 'Literal') {
-			properties.push(prop.key.value);
-		}
-	}
-
-	return properties;
 }
 
 export default {
