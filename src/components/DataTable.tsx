@@ -2,9 +2,9 @@ import {
 	Box,
 	Card,
 	Checkbox,
+	CircularProgress,
 	FormControlLabel,
 	IconButton,
-	Skeleton,
 	Stack,
 	Table,
 	TableBody,
@@ -14,41 +14,30 @@ import {
 	TableRow,
 	Typography,
 } from '@mui/material';
+import { i18n } from 'i18next';
 import { KeyboardArrowDown, KeyboardArrowUp, NavigateBefore, NavigateNext } from '@mui/icons-material';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { i18n } from 'i18next';
+
 import { NumberField } from './NumberField.js';
 import { useDebounce } from '../hooks/useDebounce.js';
 import { useLocalStorage } from '../hooks/useLocalStorage.js';
 
-type ColumnSize = 'fill' | 'minimum';
+export type Column<T> = NonSortableColumn | SortableColumn<T>;
 
-interface BaseColumn {
-	align?: 'center' | 'left' | 'right' | undefined;
-	label: string | React.ReactElement;
-	size?: ColumnSize;
-}
-
-export type SortableFields<T> = Exclude<keyof T, 'id'>;
-
-interface SortableColumn<T> extends BaseColumn {
-	isSortable: true;
-	key: SortableFields<T>;
-}
-
-interface NonSortableColumn extends BaseColumn {
-	isSortable: false;
-	key: string;
-}
-
-export type Column<T> = SortableColumn<T> | NonSortableColumn;
-
-export interface LoadParams<T> {
-	currentPage: number;
-	pageSize: number;
-	showAll: boolean;
-	sortAscending: boolean;
-	sortBy: SortableFields<T>;
+export interface DataTableProps<T> {
+	columns: Column<T>[];
+	data: (React.ReactElement | string)[][];
+	emptyMessage?: string;
+	fullWidth?: boolean;
+	groups?: Group[];
+	header?: React.ReactElement;
+	i18n: i18n;
+	isLoading?: boolean;
+	loadingIndicatorDelay?: number;
+	onLoad: (params: LoadParams<T>) => void;
+	onRowClick?: (rowIndex: number) => void;
+	persistenceKey?: string;
+	totalCount: number;
 }
 
 export interface Group {
@@ -58,25 +47,38 @@ export interface Group {
 	rows: number[];
 }
 
-export interface DataTableProps<T> {
-	columns: Column<T>[];
-	data: (string | React.ReactElement)[][];
-	emptyMessage?: string;
-	fullWidth?: boolean;
-	groups?: Group[];
-	header?: React.ReactElement;
-	i18n: i18n;
-	isLoading?: boolean;
-	onLoad: (params: LoadParams<T>) => void;
-	onRowClick?: (rowIndex: number) => void;
-	persistenceKey?: string;
-	totalCount: number;
+export interface LoadParams<T> {
+	currentPage: number;
+	pageSize: number;
+	showAll: boolean;
+	sortAscending: boolean;
+	sortBy: SortableFields<T>;
+}
+
+export type SortableFields<T> = Exclude<keyof T, 'id'>;
+
+interface BaseColumn {
+	align?: 'center' | 'left' | 'right' | undefined;
+	label: React.ReactElement | string;
+	size?: ColumnSize;
+}
+
+type ColumnSize = 'fill' | 'minimum';
+
+interface NonSortableColumn extends BaseColumn {
+	isSortable: false;
+	key: string;
+}
+
+interface SortableColumn<T> extends BaseColumn {
+	isSortable: true;
+	key: SortableFields<T>;
 }
 
 const GroupRow: React.FC<{ actions?: React.ReactElement; children: React.ReactNode; colSpan: number }> = ({
+	actions,
 	children,
 	colSpan,
-	actions,
 }) => (
 	<TableRow>
 		<TableCell colSpan={colSpan} sx={{ backgroundColor: 'action.hover' }}>
@@ -97,6 +99,7 @@ const DataTableComponent = <T extends object>({
 	header,
 	i18n,
 	isLoading = false,
+	loadingIndicatorDelay = 600,
 	onLoad,
 	onRowClick,
 	persistenceKey,
@@ -137,7 +140,7 @@ const DataTableComponent = <T extends object>({
 	const [sortAscending, setSortAscending] = useState<boolean>(sortSettings.sortAscending);
 	const [debouncedCurrentPage, setCurrentPage, currentPage] = useDebounce(1);
 	const [debouncedPageSize, setPageSize, pageSize] = useDebounce(paginationSettings.pageSize);
-	const [debouncedShowSkeleton, setShowSkeleton] = useDebounce(isLoading, 600);
+	const [showLoadingIndicator, setShowLoadingIndicator] = useDebounce(isLoading, loadingIndicatorDelay);
 
 	const totalPages = useMemo(
 		() => (paginationSettings.showAll ? 1 : Math.max(1, Math.ceil(totalCount / paginationSettings.pageSize))),
@@ -145,7 +148,7 @@ const DataTableComponent = <T extends object>({
 	);
 
 	useEffect(() => setPageSize(paginationSettings.pageSize), [paginationSettings.pageSize]);
-	useEffect(() => setShowSkeleton(isLoading));
+	useEffect(() => setShowLoadingIndicator(isLoading), [isLoading]);
 	useEffect(
 		() =>
 			onLoad({
@@ -209,7 +212,7 @@ const DataTableComponent = <T extends object>({
 	}, [currentPage, setCurrentPage]);
 
 	const getSortIcon = useCallback(
-		(column: Column<T>): React.ReactElement | null => {
+		(column: Column<T>): null | React.ReactElement => {
 			if (!column.isSortable || sortBy !== column.key) {
 				return null;
 			}
@@ -237,8 +240,13 @@ const DataTableComponent = <T extends object>({
 				<TableRow>
 					{columns.map(col => (
 						<TableCell
-							key={String(col.key)}
 							align={col.align}
+							aria-label={
+								col.isSortable && typeof col.label === 'string'
+									? t('dataTable.sortBy', { label: col.label })
+									: undefined
+							}
+							key={String(col.key)}
 							onClick={col.isSortable ? (): void => handleSortColumn(col.key) : undefined}
 							onKeyDown={
 								col.isSortable
@@ -249,6 +257,7 @@ const DataTableComponent = <T extends object>({
 										}
 									: undefined
 							}
+							role={col.isSortable ? 'button' : undefined}
 							sx={{
 								'&:hover': col.isSortable ? { backgroundColor: 'action.hover' } : {},
 								cursor: col.isSortable ? 'pointer' : 'default',
@@ -257,12 +266,6 @@ const DataTableComponent = <T extends object>({
 								whiteSpace: 'nowrap',
 							}}
 							tabIndex={col.isSortable ? 0 : undefined}
-							role={col.isSortable ? 'button' : undefined}
-							aria-label={
-								col.isSortable && typeof col.label === 'string'
-									? t('dataTable.sortBy', { label: col.label })
-									: undefined
-							}
 						>
 							<Box
 								sx={{
@@ -287,93 +290,13 @@ const DataTableComponent = <T extends object>({
 	const tableBody = useMemo(
 		() => (
 			<TableBody>
-				{debouncedShowSkeleton ? (
-					// Show skeleton rows while loading
-					Array.from(new Array(paginationSettings.pageSize)).map((_, index) => (
-						<TableRow key={`skeleton-${index}`}>
-							{columns.map((column, columnIndex) => (
-								<TableCell
-									key={`skeleton-cell-${index}-${columnIndex}`}
-									align={column.align}
-									sx={{
-										...getColumnStyles(column.size),
-									}}
-								>
-									<Skeleton variant="text" />
-								</TableCell>
-							))}
-						</TableRow>
-					))
-				) : data.length === 0 ? (
-					<TableRow>
-						<TableCell colSpan={columns.length} align="center">
-							<Typography variant="body2" color="text.secondary" fontStyle="italic">
-								{emptyMessage ?? t('dataTable.emptyMessage')}
-							</Typography>
-						</TableCell>
-					</TableRow>
-				) : groups ? (
-					// Render grouped rows
-					groups.map(group => (
-						<React.Fragment key={group.key}>
-							<GroupRow colSpan={columns.length} actions={group.actions}>
-								{group.header}
-							</GroupRow>
-							{group.rows.map(rowIndex => {
-								const row = data[rowIndex];
-								if (!row) {
-									return null;
-								}
-								return (
-									<TableRow
-										key={`row-${rowIndex}`}
-										hover
-										onClick={onRowClick ? (): void => onRowClick(rowIndex) : undefined}
-										sx={{
-											cursor: onRowClick ? 'pointer' : 'default',
-										}}
-									>
-										{row.map((cell, cellIndex) => (
-											<TableCell
-												key={`cell-${rowIndex}-${cellIndex}`}
-												align={columns[cellIndex]?.align}
-												sx={{
-													...getColumnStyles(columns[cellIndex]?.size),
-												}}
-											>
-												{cell}
-											</TableCell>
-										))}
-									</TableRow>
-								);
-							})}
-						</React.Fragment>
-					))
-				) : (
-					// Render regular rows
-					data.map((row, rowIndex) => (
-						<TableRow
-							key={`row-${rowIndex}`}
-							hover
-							onClick={onRowClick ? (): void => onRowClick(rowIndex) : undefined}
-							sx={{
-								cursor: onRowClick ? 'pointer' : 'default',
-							}}
-						>
-							{row.map((cell, cellIndex) => (
-								<TableCell
-									key={`cell-${rowIndex}-${cellIndex}`}
-									align={columns[cellIndex]?.align}
-									sx={{
-										...getColumnStyles(columns[cellIndex]?.size),
-									}}
-								>
-									{cell}
-								</TableCell>
-							))}
-						</TableRow>
-					))
-				)}
+				{showLoadingIndicator
+					? renderLoadingIndicator()
+					: data.length === 0
+						? renderEmptyTable()
+						: groups
+							? renderGroupedRows(groups)
+							: renderRows()}
 			</TableBody>
 		),
 		[
@@ -381,7 +304,7 @@ const DataTableComponent = <T extends object>({
 			columns,
 			emptyMessage,
 			getColumnStyles,
-			debouncedShowSkeleton,
+			showLoadingIndicator,
 			paginationSettings.pageSize,
 			onRowClick,
 			groups,
@@ -405,7 +328,7 @@ const DataTableComponent = <T extends object>({
 			)}
 
 			<TableContainer sx={{ overflowY: 'auto' }}>
-				<Table sx={{ tableLayout: 'auto' }} stickyHeader>
+				<Table stickyHeader sx={{ tableLayout: 'auto' }}>
 					{tableHeader}
 					{tableBody}
 				</Table>
@@ -424,24 +347,24 @@ const DataTableComponent = <T extends object>({
 					p: 1,
 				}}
 			>
-				<Typography variant="body2" color="text.secondary">
+				<Typography color="text.secondary" variant="body2">
 					{t('dataTable.list.total', { count: totalCount })}
 				</Typography>
 
-				<Stack direction="row" spacing={1} alignItems="center">
+				<Stack alignItems="center" direction="row" spacing={1}>
 					{!paginationSettings.showAll && (
 						<>
 							<IconButton
-								onClick={handlePreviousPage}
-								disabled={isLoading || currentPage <= 1}
-								size="small"
 								aria-label={t('dataTable.list.previous')}
+								disabled={isLoading || currentPage <= 1}
+								onClick={handlePreviousPage}
+								size="small"
 							>
 								<NavigateBefore />
 							</IconButton>
 							<NumberField
-								value={currentPage}
 								onChange={e => setCurrentPage(Math.max(1, Math.min(totalPages, e)))}
+								size="small"
 								slotProps={{
 									htmlInput: { pattern: '[0-9]*' },
 									input: {
@@ -452,17 +375,17 @@ const DataTableComponent = <T extends object>({
 										},
 									},
 								}}
-								size="small"
 								sx={{ width: '5em' }}
+								value={currentPage}
 							/>
-							<Typography variant="body2" color="text.secondary">
+							<Typography color="text.secondary" variant="body2">
 								/ {totalPages}
 							</Typography>
 							<IconButton
-								onClick={handleNextPage}
-								disabled={isLoading || currentPage >= totalPages}
-								size="small"
 								aria-label={t('dataTable.list.next')}
+								disabled={isLoading || currentPage >= totalPages}
+								onClick={handleNextPage}
+								size="small"
 							>
 								<NavigateNext />
 							</IconButton>
@@ -470,15 +393,15 @@ const DataTableComponent = <T extends object>({
 					)}
 				</Stack>
 
-				<Stack direction="row" spacing={2} alignItems="center">
+				<Stack alignItems="center" direction="row" spacing={2}>
 					{!paginationSettings.showAll && (
-						<Stack direction="row" spacing={1} alignItems="center">
-							<Typography variant="body2" color="text.secondary">
+						<Stack alignItems="center" direction="row" spacing={1}>
+							<Typography color="text.secondary" variant="body2">
 								{t('dataTable.list.itemsPerPage')}
 							</Typography>
 							<NumberField
-								value={pageSize}
 								onChange={e => setPageSize(e)}
+								size="small"
 								slotProps={{
 									input: {
 										'aria-label': t('dataTable.itemsPerPage'),
@@ -487,8 +410,8 @@ const DataTableComponent = <T extends object>({
 										},
 									},
 								}}
-								size="small"
 								sx={{ width: '5em' }}
+								value={pageSize}
 							/>
 						</Stack>
 					)}
@@ -502,7 +425,7 @@ const DataTableComponent = <T extends object>({
 							/>
 						}
 						label={
-							<Typography variant="body2" color="text.secondary">
+							<Typography color="text.secondary" variant="body2">
 								{t('dataTable.list.showAll')}
 							</Typography>
 						}
@@ -511,6 +434,99 @@ const DataTableComponent = <T extends object>({
 			</Box>
 		</Card>
 	);
+
+	function renderRows(): React.ReactNode {
+		return data.map((row, rowIndex) => (
+			<TableRow
+				hover
+				key={`row-${rowIndex}`}
+				onClick={onRowClick ? (): void => onRowClick(rowIndex) : undefined}
+				sx={{
+					cursor: onRowClick ? 'pointer' : 'default',
+				}}
+			>
+				{row.map((cell, cellIndex) => (
+					<TableCell
+						align={columns[cellIndex]?.align}
+						key={`cell-${rowIndex}-${cellIndex}`}
+						sx={{
+							...getColumnStyles(columns[cellIndex]?.size),
+						}}
+					>
+						{cell}
+					</TableCell>
+				))}
+			</TableRow>
+		));
+	}
+
+	function renderGroupedRows(groups: Group[]): React.ReactNode {
+		return groups.map(group => (
+			<React.Fragment key={group.key}>
+				<GroupRow actions={group.actions} colSpan={columns.length}>
+					{group.header}
+				</GroupRow>
+				{group.rows.map(rowIndex => {
+					const row = data[rowIndex];
+					if (!row) {
+						return null;
+					}
+					return (
+						<TableRow
+							hover
+							key={`row-${rowIndex}`}
+							onClick={onRowClick ? (): void => onRowClick(rowIndex) : undefined}
+							sx={{
+								cursor: onRowClick ? 'pointer' : 'default',
+							}}
+						>
+							{row.map((cell, cellIndex) => (
+								<TableCell
+									align={columns[cellIndex]?.align}
+									key={`cell-${rowIndex}-${cellIndex}`}
+									sx={{
+										...getColumnStyles(columns[cellIndex]?.size),
+									}}
+								>
+									{cell}
+								</TableCell>
+							))}
+						</TableRow>
+					);
+				})}
+			</React.Fragment>
+		));
+	}
+
+	function renderLoadingIndicator(): React.ReactNode {
+		return (
+			<Box
+				sx={{
+					alignItems: 'center',
+					backgroundColor: 'rgba(255, 255, 255, 0.7)',
+					display: 'flex',
+					inset: 0,
+					justifyContent: 'center',
+					position: 'absolute',
+					zIndex: 1,
+				}}
+			>
+				<CircularProgress />
+			</Box>
+		);
+	}
+
+	function renderEmptyTable(): React.ReactNode {
+		return (
+			<TableRow>
+				<TableCell align="center" colSpan={columns.length}>
+					<Typography color="text.secondary" fontStyle="italic" variant="body2">
+						{emptyMessage ?? t('dataTable.emptyMessage')}
+					</Typography>
+				</TableCell>
+			</TableRow>
+		);
+	}
 };
 
 export const DataTable = React.memo(DataTableComponent) as typeof DataTableComponent;

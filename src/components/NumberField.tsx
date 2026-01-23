@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { TextField, TextFieldProps } from '@mui/material';
 
-interface NumberFieldProps extends Omit<TextFieldProps, 'onChange' | 'placeholder' | 'type' | 'inputMode' | 'value'> {
+interface NumberFieldProps extends Omit<TextFieldProps, 'inputMode' | 'onChange' | 'placeholder' | 'type' | 'value'> {
 	decimalPlaces?: number;
 	onChange: (value: number) => void;
-	value: number | '';
+	value: '' | number;
 }
 
 export function NumberField({
@@ -45,9 +45,9 @@ export function NumberField({
 			{...textFieldProps}
 			inputMode="numeric"
 			onChange={handleChange}
+			slotProps={textFieldProps.slotProps}
 			type="text"
 			value={displayValue}
-			slotProps={textFieldProps.slotProps}
 		/>
 	);
 }

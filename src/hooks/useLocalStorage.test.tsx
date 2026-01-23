@@ -1,4 +1,5 @@
 import { act, renderHook } from '@testing-library/react';
+
 import { useLocalStorage } from './useLocalStorage.js';
 
 describe('useLocalStorage', () => {
@@ -111,7 +112,7 @@ describe('useLocalStorage', () => {
 	});
 
 	it('should update localStorage when key changes', () => {
-		const { result, rerender } = renderHook(({ key }) => useLocalStorage(key, 'value'), {
+		const { rerender, result } = renderHook(({ key }) => useLocalStorage(key, 'value'), {
 			initialProps: { key: 'key1' },
 		});
 

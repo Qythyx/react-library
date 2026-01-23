@@ -1,7 +1,8 @@
-import { render, screen } from '../test-utils/testUtils.js';
-import { ImageModal } from './ImageModal.js';
 import React from 'react';
 import { userEvent } from '@testing-library/user-event';
+
+import { ImageModal } from './ImageModal.js';
+import { render, screen } from '../test-utils/testUtils.js';
 
 describe('ImageModal', () => {
 	it('should not display modal when isOpen is false', () => {

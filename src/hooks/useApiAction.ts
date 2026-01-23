@@ -1,9 +1,10 @@
-import { ApiResponse } from '../utils/types.js';
-import { getStatusMessage } from '../utils/StatusCodes.js';
 import { useCallback } from 'react';
 
+import { ApiResponse } from '../utils/types.js';
+import { getStatusMessage } from '../utils/StatusCodes.js';
+
 export const useApiAction = (
-	setError: (error: string | null) => void,
+	setError: (error: null | string) => void,
 	setIsLoading: (isLoading: boolean) => void,
 ): {
 	executeAction: <TData>(

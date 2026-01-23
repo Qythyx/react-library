@@ -12,9 +12,9 @@ interface DateFieldProps extends Omit<TextFieldProps, 'onChange' | 'type' | 'val
 export const DateField = React.memo(function DateField({
 	dateOnly = false,
 	isEditing = true,
-	value,
 	onChange,
 	onValid,
+	value,
 	...props
 }: DateFieldProps): React.ReactElement {
 	const formatDate = (dateStr: string | undefined): string => {
@@ -51,8 +51,6 @@ export const DateField = React.memo(function DateField({
 	return isEditing ? (
 		<TextField
 			{...props}
-			type={dateOnly ? 'date' : 'datetime-local'}
-			value={localValue}
 			onChange={e => {
 				setLocalValue(e.target.value);
 				const validDate = checkIsValid(e.target.value);
@@ -62,6 +60,8 @@ export const DateField = React.memo(function DateField({
 				}
 			}}
 			slotProps={{ htmlInput: { max: '9999-12-31' + (dateOnly ? '' : 'T23:59') }, inputLabel: { shrink: true } }}
+			type={dateOnly ? 'date' : 'datetime-local'}
+			value={localValue}
 		/>
 	) : (
 		<span>{formatForDisplay(value)}</span>

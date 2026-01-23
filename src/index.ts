@@ -15,6 +15,6 @@ export { getStorageValue, useLocalStorage } from './hooks/useLocalStorage.ts';
 export { type ParamTypeRegistry, useRequiredParams } from './hooks/useRequiredParams.ts';
 
 // Utils
-export { HttpStatus, getStatusMessage } from './utils/StatusCodes.ts';
-export type { ApiResponse, OkResponse, BadResponse } from './utils/types.ts';
 export { stringifySorted } from './utils/SortedStringifier.ts';
+export { getStatusMessage, HttpStatus } from './utils/StatusCodes.ts';
+export type { ApiResponse, BadResponse, OkResponse } from './utils/types.ts';

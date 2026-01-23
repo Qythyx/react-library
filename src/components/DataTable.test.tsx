@@ -1,13 +1,14 @@
-import { Column, DataTable, Group } from './DataTable.js';
-import { render, screen, waitFor } from '../test-utils/testUtils.js';
-import { createMockI18n } from '../test-utils/i18nMock.js';
 import React from 'react';
 import { userEvent } from '@testing-library/user-event';
 
+import { Column, DataTable, Group } from './DataTable.js';
+import { createMockI18n } from '../test-utils/i18nMock.js';
+import { render, screen, waitFor } from '../test-utils/testUtils.js';
+
 interface TestRow {
+	age: number;
 	id: number;
 	name: string;
-	age: number;
 }
 
 describe('DataTable', () => {
@@ -95,10 +96,10 @@ describe('DataTable', () => {
 			<DataTable<TestRow>
 				columns={mockColumns}
 				data={[]}
+				emptyMessage="Custom empty message"
 				i18n={i18n}
 				onLoad={onLoad}
 				totalCount={0}
-				emptyMessage="Custom empty message"
 			/>,
 		);
 
@@ -380,7 +381,7 @@ describe('DataTable', () => {
 	});
 
 	describe('Loading state', () => {
-		it('should show loading skeleton when isLoading is true', async () => {
+		it('should show loading indicator when isLoading is true', async () => {
 			const { container } = render(
 				<DataTable<TestRow>
 					columns={mockColumns}
@@ -393,8 +394,8 @@ describe('DataTable', () => {
 			);
 
 			await waitFor(() => {
-				const skeletons = container.querySelectorAll('.MuiSkeleton-root');
-				expect(skeletons.length).toBeGreaterThan(0);
+				const indicators = container.querySelectorAll('.MuiCircularProgress-root');
+				expect(indicators.length).toBeGreaterThan(0);
 			});
 		});
 	});

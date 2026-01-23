@@ -1,7 +1,8 @@
-import { render, screen } from '../test-utils/testUtils.js';
-import { DateField } from './DateField.js';
 import React from 'react';
 import { userEvent } from '@testing-library/user-event';
+
+import { DateField } from './DateField.js';
+import { render, screen } from '../test-utils/testUtils.js';
 
 describe('DateField', () => {
 	it('should render date input when dateOnly is true', () => {
@@ -56,7 +57,7 @@ describe('DateField', () => {
 	it('should call onChange with undefined for empty date', async () => {
 		const onChange = jest.fn();
 		const user = userEvent.setup();
-		const { container } = render(<DateField value="2024-01-15T10:30:00.000Z" onChange={onChange} />);
+		const { container } = render(<DateField onChange={onChange} value="2024-01-15T10:30:00.000Z" />);
 		const input = container.querySelector('input') as HTMLInputElement;
 
 		await user.clear(input);
@@ -81,13 +82,13 @@ describe('DateField', () => {
 	});
 
 	it('should initialize with formatted value', () => {
-		const { container } = render(<DateField value="2024-01-15T10:30:00.000Z" dateOnly={true} />);
+		const { container } = render(<DateField dateOnly={true} value="2024-01-15T10:30:00.000Z" />);
 		const input = container.querySelector('input') as HTMLInputElement;
 		expect(input.value).toBe('2024-01-15');
 	});
 
 	it('should initialize with formatted datetime value', () => {
-		const { container } = render(<DateField value="2024-01-15T10:30:00.000Z" dateOnly={false} />);
+		const { container } = render(<DateField dateOnly={false} value="2024-01-15T10:30:00.000Z" />);
 		const input = container.querySelector('input') as HTMLInputElement;
 		expect(input.value).toMatch(/2024-01-15T\d{2}:\d{2}/);
 	});
@@ -105,12 +106,12 @@ describe('DateField', () => {
 	});
 
 	it('should format display text correctly for date only', () => {
-		const { container } = render(<DateField isEditing={false} value="2024-01-15T10:30:00.000Z" dateOnly={true} />);
+		const { container } = render(<DateField dateOnly={true} isEditing={false} value="2024-01-15T10:30:00.000Z" />);
 		expect(container.textContent).toBe('2024-01-15');
 	});
 
 	it('should format display text correctly for datetime', () => {
-		const { container } = render(<DateField isEditing={false} value="2024-01-15T10:30:00.000Z" dateOnly={false} />);
+		const { container } = render(<DateField dateOnly={false} isEditing={false} value="2024-01-15T10:30:00.000Z" />);
 		expect(container.textContent).toMatch(/2024-01-15, \d{2}:\d{2}/);
 	});
 

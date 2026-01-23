@@ -1,19 +1,20 @@
-import * as Icons from '@mui/icons-material';
 import { Box, SxProps, Theme } from '@mui/material';
+import * as Icons from '@mui/icons-material';
 import React, { ReactNode, useCallback, useEffect, useRef, useState } from 'react';
+
 import { ImageModal } from './ImageModal.js';
+
+export interface ThumbnailRef {
+	openImage: (imageUrl: string) => void;
+}
 
 interface ThumbnailProps {
 	alt?: string;
 	imageUrl?: string;
 	noImageIcon?: ReactNode | undefined;
-	onImageClick?: ((imageUrl: string, event: React.MouseEvent<HTMLElement, MouseEvent>) => void) | undefined | null;
+	onImageClick?: ((imageUrl: string, event: React.MouseEvent<HTMLElement, MouseEvent>) => void) | null | undefined;
 	onNoImageClick?: React.MouseEventHandler<HTMLElement> | undefined;
 	sx?: SxProps<Theme> | undefined;
-}
-
-export interface ThumbnailRef {
-	openImage: (imageUrl: string) => void;
 }
 
 export function Thumbnail({

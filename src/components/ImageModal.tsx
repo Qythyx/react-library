@@ -1,5 +1,5 @@
-import * as Icons from '@mui/icons-material';
 import { IconButton, Modal } from '@mui/material';
+import * as Icons from '@mui/icons-material';
 import React from 'react';
 
 interface ImageModalProps {
@@ -18,9 +18,9 @@ export function ImageModal({ imageUrl, isOpen, onClose }: ImageModalProps): Reac
 
 	return (
 		<Modal
-			open={isOpen}
 			onClick={handleClick}
 			onClose={onClose}
+			open={isOpen}
 			sx={{
 				alignItems: 'center',
 				display: 'flex',

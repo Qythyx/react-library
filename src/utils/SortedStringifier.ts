@@ -1,3 +1,11 @@
+export function stringifySorted<T>(
+	value: T,
+	replacer?: (this: T, key: string, value: T) => T,
+	space?: number | string,
+): string {
+	return JSON.stringify(sortKeys(value), replacer, space);
+}
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function sortKeys(obj: unknown): any {
 	if (Array.isArray(obj)) {
@@ -15,12 +23,4 @@ function sortKeys(obj: unknown): any {
 			);
 	}
 	return obj;
-}
-
-export function stringifySorted<T>(
-	value: T,
-	replacer?: (this: T, key: string, value: T) => T,
-	space?: string | number,
-): string {
-	return JSON.stringify(sortKeys(value), replacer, space);
 }

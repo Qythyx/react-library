@@ -1,5 +1,6 @@
 import { renderHook } from '@testing-library/react';
 import { useParams } from 'react-router-dom';
+
 import { useRequiredParams } from './useRequiredParams.js';
 
 jest.mock('react-router-dom', () => ({

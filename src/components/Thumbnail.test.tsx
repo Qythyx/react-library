@@ -1,7 +1,8 @@
-import { render, screen, waitFor } from '../test-utils/testUtils.js';
 import React from 'react';
-import { Thumbnail } from './Thumbnail.js';
 import { userEvent } from '@testing-library/user-event';
+
+import { render, screen, waitFor } from '../test-utils/testUtils.js';
+import { Thumbnail } from './Thumbnail.js';
 
 describe('Thumbnail', () => {
 	it('should display image when imageUrl is provided', () => {
@@ -128,7 +129,7 @@ describe('Thumbnail', () => {
 	});
 
 	it('should use custom alt text when provided', () => {
-		render(<Thumbnail imageUrl="test.jpg" alt="Custom Alt" sx={undefined} />);
+		render(<Thumbnail alt="Custom Alt" imageUrl="test.jpg" sx={undefined} />);
 		expect(screen.getByAltText('Custom Alt')).toBeInTheDocument();
 	});
 

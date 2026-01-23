@@ -4,11 +4,15 @@ import eslintPluginPrettier from 'eslint-plugin-prettier';
 import globals from 'globals';
 import jestDom from 'eslint-plugin-jest-dom';
 import jsdoc from 'eslint-plugin-jsdoc';
+import perfectionist from 'eslint-plugin-perfectionist';
 import prettier from 'eslint-config-prettier';
 import react from 'eslint-plugin-react';
 import stylistic from '@stylistic/eslint-plugin';
 import tseslint from 'typescript-eslint';
+
 import validateTranslationKeys from './eslint-rules/validate-translation-keys.js';
+
+const isFixMode = process.argv.includes('--fix');
 
 export default defineConfig(
 	{
@@ -18,6 +22,7 @@ export default defineConfig(
 	tseslint.configs.recommended,
 	prettier,
 	jsdoc.configs['flat/recommended-typescript'],
+	perfectionist.configs['recommended-alphabetical'],
 	{
 		ignores: ['**/dist/**', '**/node_modules/**'],
 	},
@@ -29,6 +34,7 @@ export default defineConfig(
 		languageOptions: {
 			globals: {
 				...globals.browser,
+				...globals.node,
 			},
 			parserOptions: {
 				ecmaFeatures: { jsx: true },
@@ -51,7 +57,7 @@ export default defineConfig(
 			'@stylistic/quotes': ['error', 'single', { allowTemplateLiterals: 'never', avoidEscape: true }],
 			'arrow-parens': ['error', 'as-needed'],
 			curly: ['error', 'all'],
-			'custom/validate-translation-keys': 'error',
+			'custom/validate-translation-keys': isFixMode ? 'off' : 'error',
 			'jsdoc/require-jsdoc': [
 				'off', // turn this on later
 				{
@@ -67,6 +73,7 @@ export default defineConfig(
 			],
 			'jsdoc/require-param': ['warn', { checkDestructuredRoots: false, enableRootFixer: false }],
 			'object-shorthand': ['error', 'always'],
+			'perfectionist/sort-imports': ['error', { sortBy: 'specifier' }],
 			'prefer-destructuring': [
 				'warn',
 				{
@@ -78,8 +85,6 @@ export default defineConfig(
 				},
 			],
 			'prettier/prettier': 'error',
-			'sort-imports': ['error', { ignoreCase: true }],
-			'sort-keys': 'error',
 		},
 	},
 	{

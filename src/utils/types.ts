@@ -1,8 +1,4 @@
-export interface OkResponse<T> {
-	data: T;
-	ok: true;
-	status: number;
-}
+export type ApiResponse<T> = BadResponse | OkResponse<T>;
 
 export interface BadResponse {
 	error?: string;
@@ -10,4 +6,8 @@ export interface BadResponse {
 	status: number;
 }
 
-export type ApiResponse<T> = OkResponse<T> | BadResponse;
+export interface OkResponse<T> {
+	data: T;
+	ok: true;
+	status: number;
+}
