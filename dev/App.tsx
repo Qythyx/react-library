@@ -1,10 +1,14 @@
-import { Checkbox, Stack } from '@mui/material';
+import { Box, Checkbox, Stack } from '@mui/material';
 import React, { useCallback, useState } from 'react';
 
-import { Column, DataTable, DateField, LoadParams, NumberField } from '../src/index.ts';
+import { Column, DataTable, DateField, LoadParams, NumberField, Thumbnail } from '../src/index.ts';
 
 type Row = { Text: string; Value: number };
 const TotalRows = 100;
+const TestImageSize = 500;
+const TestImageVariation = 200;
+const TestExtraWords = 20;
+const TestExtraWordLength = 25;
 
 function App(): React.ReactElement {
 	const [date, setDate] = useState<string | undefined>(new Date().toISOString());
@@ -12,13 +16,40 @@ function App(): React.ReactElement {
 	const [isEmpty, setIsEmpty] = useState(false);
 	const [isLoading, setIsLoading] = useState(false);
 
-	// const data: string[][] = Array.from({ length: 20 }).map((_, i) => [`foo_${i}`, `${i}`]);
-	const [data, setData] = useState<string[][]>([]);
+	const [data, setData] = useState<(React.ReactElement | string)[][]>([]);
 
 	const columns: Column<Row>[] = [
 		{ isSortable: true, key: 'Text', label: 'Name', size: 'fill' },
 		{ align: 'right', isSortable: true, key: 'Value', label: 'Amount', size: 'minimum' },
 	];
+
+	const createNameCell = (index: number): React.ReactElement => {
+		const getSize = (): number =>
+			Math.floor(Math.random() * 2 * TestImageVariation - TestImageVariation + TestImageSize);
+		const getExtra = (): string =>
+			Array.from({ length: Math.floor(Math.random() * TestExtraWords + 1) })
+				.map(() => '#'.repeat(Math.floor(Math.random() * TestExtraWordLength + 1)))
+				.join(' ');
+		return (
+			<Stack alignItems="center" direction="row" spacing={1} sx={{ height: '100%' }}>
+				<Thumbnail
+					imageUrl={`https://picsum.photos/seed/${index + 1}/${getSize()}/${getSize()}`}
+					sx={{
+						'& img': { height: '100%', objectFit: 'cover', width: '100%' },
+						border: 'solid 1px',
+						borderColor: 'divider',
+						borderRadius: 1,
+						boxSizing: 'border-box',
+						overflow: 'hidden',
+						width: 48,
+					}}
+				/>
+				<span>
+					foo_{index} {getExtra()}
+				</span>
+			</Stack>
+		);
+	};
 
 	const loadData = useCallback(
 		(params: LoadParams<Row>): void => {
@@ -29,10 +60,13 @@ function App(): React.ReactElement {
 					if (isEmpty) {
 						setData([]);
 					} else if (params.showAll) {
-						setData(Array.from({ length: TotalRows }).map((_, i) => [`foo_${i}`, `${i}`]));
+						setData(Array.from({ length: TotalRows }).map((_, i) => [createNameCell(i), `${i}`]));
 					} else {
 						setData(
-							Array.from({ length: params.pageSize }).map((_, i) => [`foo_${i + start}`, `${i + start}`]),
+							Array.from({ length: params.pageSize }).map((_, i) => [
+								createNameCell(i + start),
+								<Box sx={{ border: 'solid 1px', paddingY: '1em' }}>{i + start}</Box>,
+							]),
 						);
 					}
 					setIsLoading(false);

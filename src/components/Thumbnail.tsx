@@ -35,9 +35,14 @@ export function Thumbnail({
 	useEffect(() => {
 		const updateImageHeight = (): void => {
 			if (ref.current) {
-				const sibling = ref.current.parentElement;
-				if (sibling) {
-					const { height } = sibling.getBoundingClientRect();
+				const parent = ref.current.parentElement;
+				if (parent) {
+					// Temporarily collapse so the parent can shrink to its natural height
+					ref.current.style.height = '0px';
+					ref.current.style.maxHeight = '0px';
+					const { height } = parent.getBoundingClientRect();
+					ref.current.style.height = '';
+					ref.current.style.maxHeight = '';
 					setImageHeight(height);
 				}
 			}
@@ -45,10 +50,15 @@ export function Thumbnail({
 
 		updateImageHeight();
 		const resizeObserver = new ResizeObserver(updateImageHeight);
-		if (ref.current) {
-			resizeObserver.observe(ref.current);
+		const parent = ref.current?.parentElement;
+		if (parent) {
+			resizeObserver.observe(parent);
 		}
-		return (): void => resizeObserver.disconnect();
+		window.addEventListener('resize', updateImageHeight);
+		return (): void => {
+			resizeObserver.disconnect();
+			window.removeEventListener('resize', updateImageHeight);
+		};
 	}, []);
 
 	const handleImageClick =
@@ -82,6 +92,7 @@ export function Thumbnail({
 					border: imageUrl ? 'none' : 'solid 2px red',
 					borderRadius: '5px',
 					display: 'flex',
+					flexShrink: 0,
 					height: `${imageHeight}px`,
 					justifyContent: 'center',
 					maxHeight: `${imageHeight}px`,
