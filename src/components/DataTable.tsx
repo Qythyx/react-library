@@ -316,6 +316,7 @@ const DataTableComponent = <T extends object>({
 										align={columns[cellIndex]?.align}
 										key={`cell-${rowIndex}-${cellIndex}`}
 										sx={{
+											height: '1px',
 											...getColumnStyles(columns[cellIndex]?.size),
 										}}
 									>
@@ -359,6 +360,7 @@ const DataTableComponent = <T extends object>({
 							align={columns[cellIndex]?.align}
 							key={`cell-${rowIndex}-${cellIndex}`}
 							sx={{
+								height: '1px',
 								...getColumnStyles(columns[cellIndex]?.size),
 							}}
 						>
