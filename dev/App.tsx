@@ -15,6 +15,7 @@ function App(): React.ReactElement {
 	const [number, setNumber] = useState(0);
 	const [isEmpty, setIsEmpty] = useState(false);
 	const [isLoading, setIsLoading] = useState(false);
+	const [scrollInternally, setScrollInternally] = useState(true);
 
 	const [data, setData] = useState<(React.ReactElement | string)[][]>([]);
 
@@ -77,7 +78,10 @@ function App(): React.ReactElement {
 	);
 
 	return (
-		<div style={{ padding: '20px' }}>
+		<Stack
+			spacing={1}
+			sx={{ boxSizing: 'border-box', display: 'flex', flexDirection: 'column', height: '100vh', padding: '20px' }}
+		>
 			<h1>React Library Test Page</h1>
 			<h2>DataTable</h2>
 			<DataTable<Row>
@@ -86,6 +90,7 @@ function App(): React.ReactElement {
 				initialPageSize={5}
 				isLoading={isLoading}
 				onLoad={loadData}
+				scrollInternally={scrollInternally}
 				totalCount={100}
 			/>
 			<Stack direction="row" justifyContent="space-between" width="100%">
@@ -95,12 +100,20 @@ function App(): React.ReactElement {
 				<Stack alignItems="center" direction="row">
 					Is Empty <Checkbox checked={isEmpty} onChange={e => setIsEmpty(e.target.checked)} />{' '}
 				</Stack>
+				<Stack alignItems="center" direction="row">
+					Scroll Internally{' '}
+					<Checkbox checked={scrollInternally} onChange={e => setScrollInternally(e.target.checked)} />{' '}
+				</Stack>
 			</Stack>
-			<h2>DateField</h2>
-			<DateField onChange={val => setDate(val)} value={date} />
-			<h2>NumberField</h2>
-			<NumberField onChange={setNumber} value={number} />
-		</div>
+			<Stack alignItems="center" direction="row" spacing={1}>
+				<h2>DateField</h2>
+				<DateField onChange={val => setDate(val)} value={date} />
+			</Stack>
+			<Stack alignItems="center" direction="row" spacing={1}>
+				<h2>NumberField</h2>
+				<NumberField onChange={setNumber} value={number} />
+			</Stack>
+		</Stack>
 	);
 }
 

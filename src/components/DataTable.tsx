@@ -38,6 +38,7 @@ export interface DataTableProps<T> {
 	onLoad: (params: LoadParams<T>) => void;
 	onRowClick?: (rowIndex: number) => void;
 	persistenceKey?: string;
+	scrollInternally?: boolean;
 	totalCount: number;
 }
 
@@ -105,6 +106,7 @@ const DataTableComponent = <T extends object>({
 	onLoad,
 	onRowClick,
 	persistenceKey,
+	scrollInternally = false,
 	totalCount,
 }: DataTableProps<T>): React.ReactElement => {
 	const { t } = i18n ?? { t: ((key: string): string => key) as TFunction };
@@ -389,8 +391,21 @@ const DataTableComponent = <T extends object>({
 	);
 
 	return (
-		<Box sx={{ position: 'relative' }}>
-			<Card sx={{ display: 'flex', flexDirection: 'column', width: fullWidth ? '100%' : 'fit-content' }}>
+		<Box
+			sx={{
+				flex: scrollInternally ? 1 : undefined,
+				minHeight: scrollInternally ? 0 : undefined,
+				position: 'relative',
+			}}
+		>
+			<Card
+				sx={{
+					display: 'flex',
+					flexDirection: 'column',
+					height: scrollInternally ? '100%' : undefined,
+					width: fullWidth ? '100%' : 'fit-content',
+				}}
+			>
 				{/* Optional Header */}
 				{header && (
 					<Box
@@ -404,8 +419,13 @@ const DataTableComponent = <T extends object>({
 					</Box>
 				)}
 
-				<TableContainer sx={{ overflowY: 'auto' }}>
-					<Table stickyHeader sx={{ tableLayout: 'auto' }}>
+				<TableContainer
+					sx={{
+						flex: scrollInternally ? 1 : undefined,
+						overflowY: scrollInternally ? 'auto' : undefined,
+					}}
+				>
+					<Table stickyHeader={scrollInternally} sx={{ tableLayout: 'auto' }}>
 						{tableHeader}
 						{tableBody}
 					</Table>
