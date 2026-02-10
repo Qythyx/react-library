@@ -25,20 +25,24 @@ describe('useApiAction', () => {
 		expect(typeof result.current.executeAction).toBe('function');
 	});
 
-	it('should call onSuccess when API response is ok', async () => {
+	it('should call okHandler when API response is ok', async () => {
 		const { result } = renderHook(() => useApiAction(setError, setIsLoading));
 		const mockAction = jest.fn<Promise<ApiResponse<string>>, []>().mockResolvedValue({
 			data: 'success data',
 			ok: true,
 			status: 200,
 		});
-		const onSuccess = jest.fn();
+		const okHandler = jest.fn();
 
 		await act(async () => {
-			await result.current.executeAction(mockAction, onSuccess, 'Error message');
+			await result.current.executeAction({
+				action: mockAction,
+				errorMessage: 'Error message',
+				okHandler,
+			});
 		});
 
-		expect(onSuccess).toHaveBeenCalledWith('success data');
+		expect(okHandler).toHaveBeenCalledWith('success data');
 		expect(setError).toHaveBeenCalledWith(null);
 		expect(setIsLoading).toHaveBeenCalledWith(true);
 		expect(setIsLoading).toHaveBeenCalledWith(false);
@@ -51,13 +55,17 @@ describe('useApiAction', () => {
 			ok: false,
 			status: HttpStatus.BAD_REQUEST,
 		});
-		const onSuccess = jest.fn();
+		const okHandler = jest.fn();
 
 		await act(async () => {
-			await result.current.executeAction(mockAction, onSuccess, 'Default error');
+			await result.current.executeAction({
+				action: mockAction,
+				errorMessage: 'Default error',
+				okHandler,
+			});
 		});
 
-		expect(onSuccess).not.toHaveBeenCalled();
+		expect(okHandler).not.toHaveBeenCalled();
 		expect(setError).toHaveBeenCalledWith('Bad request error');
 	});
 
@@ -67,10 +75,12 @@ describe('useApiAction', () => {
 			ok: false,
 			status: HttpStatus.NOT_FOUND,
 		});
-		const onSuccess = jest.fn();
 
 		await act(async () => {
-			await result.current.executeAction(mockAction, onSuccess, 'Default error');
+			await result.current.executeAction({
+				action: mockAction,
+				errorMessage: 'Default error',
+			});
 		});
 
 		expect(setError).toHaveBeenCalledWith('The requested resource was not found');
@@ -82,10 +92,12 @@ describe('useApiAction', () => {
 			ok: false,
 			status: HttpStatus.UNAUTHORIZED,
 		});
-		const onSuccess = jest.fn();
 
 		await act(async () => {
-			await result.current.executeAction(mockAction, onSuccess, 'Default error');
+			await result.current.executeAction({
+				action: mockAction,
+				errorMessage: 'Default error',
+			});
 		});
 
 		expect(setError).toHaveBeenCalledWith('You do not have authorization');
@@ -95,13 +107,17 @@ describe('useApiAction', () => {
 		const { result } = renderHook(() => useApiAction(setError, setIsLoading));
 		const error = new Error('Network error');
 		const mockAction = jest.fn().mockRejectedValue(error);
-		const onSuccess = jest.fn();
+		const okHandler = jest.fn();
 
 		await act(async () => {
-			await result.current.executeAction(mockAction, onSuccess, 'Action failed');
+			await result.current.executeAction({
+				action: mockAction,
+				errorMessage: 'Action failed',
+				okHandler,
+			});
 		});
 
-		expect(onSuccess).not.toHaveBeenCalled();
+		expect(okHandler).not.toHaveBeenCalled();
 		expect(setError).toHaveBeenCalledWith('Action failed');
 		expect(consoleSpy).toHaveBeenCalledWith('Action failed', error);
 	});
@@ -113,10 +129,12 @@ describe('useApiAction', () => {
 			ok: true,
 			status: 200,
 		});
-		const onSuccess = jest.fn();
 
 		await act(async () => {
-			await result.current.executeAction(mockAction, onSuccess, 'Error');
+			await result.current.executeAction({
+				action: mockAction,
+				errorMessage: 'Error',
+			});
 		});
 
 		expect(setIsLoading).toHaveBeenNthCalledWith(1, true);
@@ -126,10 +144,12 @@ describe('useApiAction', () => {
 	it('should set loading to false even when action throws', async () => {
 		const { result } = renderHook(() => useApiAction(setError, setIsLoading));
 		const mockAction = jest.fn().mockRejectedValue(new Error('Failed'));
-		const onSuccess = jest.fn();
 
 		await act(async () => {
-			await result.current.executeAction(mockAction, onSuccess, 'Error');
+			await result.current.executeAction({
+				action: mockAction,
+				errorMessage: 'Error',
+			});
 		});
 
 		expect(setIsLoading).toHaveBeenLastCalledWith(false);
@@ -142,10 +162,12 @@ describe('useApiAction', () => {
 			ok: false,
 			status: HttpStatus.INTERNAL_SERVER_ERROR,
 		});
-		const onSuccess = jest.fn();
 
 		await act(async () => {
-			await result.current.executeAction(mockAction, onSuccess, 'Default error message');
+			await result.current.executeAction({
+				action: mockAction,
+				errorMessage: 'Default error message',
+			});
 		});
 
 		expect(setError).toHaveBeenCalledWith('Custom server error');
@@ -157,10 +179,12 @@ describe('useApiAction', () => {
 			ok: false,
 			status: HttpStatus.INTERNAL_SERVER_ERROR,
 		});
-		const onSuccess = jest.fn();
 
 		await act(async () => {
-			await result.current.executeAction(mockAction, onSuccess, 'Default error message');
+			await result.current.executeAction({
+				action: mockAction,
+				errorMessage: 'Default error message',
+			});
 		});
 
 		expect(setError).toHaveBeenCalledWith('Default error message');
@@ -178,20 +202,28 @@ describe('useApiAction', () => {
 			ok: true,
 			status: 200,
 		});
-		const onSuccess = jest.fn();
+		const okHandler = jest.fn();
 
 		await act(async () => {
-			await result.current.executeAction(mockAction1, onSuccess, 'Error');
+			await result.current.executeAction({
+				action: mockAction1,
+				errorMessage: 'Error',
+				okHandler,
+			});
 		});
 
-		expect(onSuccess).toHaveBeenCalledWith('first');
+		expect(okHandler).toHaveBeenCalledWith('first');
 
 		await act(async () => {
-			await result.current.executeAction(mockAction2, onSuccess, 'Error');
+			await result.current.executeAction({
+				action: mockAction2,
+				errorMessage: 'Error',
+				okHandler,
+			});
 		});
 
-		expect(onSuccess).toHaveBeenCalledWith('second');
-		expect(onSuccess).toHaveBeenCalledTimes(2);
+		expect(okHandler).toHaveBeenCalledWith('second');
+		expect(okHandler).toHaveBeenCalledTimes(2);
 	});
 
 	it('should clear previous error before new action', async () => {
@@ -201,12 +233,122 @@ describe('useApiAction', () => {
 			ok: true,
 			status: 200,
 		});
-		const onSuccess = jest.fn();
 
 		await act(async () => {
-			await result.current.executeAction(mockAction, onSuccess, 'Error');
+			await result.current.executeAction({
+				action: mockAction,
+				errorMessage: 'Error',
+			});
 		});
 
+		expect(setError).toHaveBeenCalledWith(null);
+	});
+
+	it('should call failedHandler instead of setError when provided', async () => {
+		const { result } = renderHook(() => useApiAction(setError, setIsLoading));
+		const badResponse = {
+			error: 'Bad request error',
+			ok: false as const,
+			status: HttpStatus.BAD_REQUEST,
+		};
+		const mockAction = jest.fn<Promise<ApiResponse<string>>, []>().mockResolvedValue(badResponse);
+		const failedHandler = jest.fn();
+
+		await act(async () => {
+			await result.current.executeAction({
+				action: mockAction,
+				errorMessage: 'Default error',
+				failedHandler,
+			});
+		});
+
+		expect(failedHandler).toHaveBeenCalledWith(badResponse);
+		expect(setError).toHaveBeenCalledWith(null); // only the initial clear
+		expect(setError).toHaveBeenCalledTimes(1);
+	});
+
+	it('should call errorHandler instead of default error handling when provided', async () => {
+		const { result } = renderHook(() => useApiAction(setError, setIsLoading));
+		const error = new Error('Network error');
+		const mockAction = jest.fn().mockRejectedValue(error);
+		const errorHandler = jest.fn();
+
+		await act(async () => {
+			await result.current.executeAction({
+				action: mockAction,
+				errorHandler,
+				errorMessage: 'Action failed',
+			});
+		});
+
+		expect(errorHandler).toHaveBeenCalledWith(error);
+		expect(setError).toHaveBeenCalledWith(null); // only the initial clear
+		expect(setError).toHaveBeenCalledTimes(1);
+		expect(consoleSpy).not.toHaveBeenCalled();
+	});
+
+	it('should call finallyHandler after setIsLoading(false)', async () => {
+		const { result } = renderHook(() => useApiAction(setError, setIsLoading));
+		const mockAction = jest.fn<Promise<ApiResponse<string>>, []>().mockResolvedValue({
+			data: 'data',
+			ok: true,
+			status: 200,
+		});
+		const callOrder: string[] = [];
+		setIsLoading.mockImplementation((loading: boolean) => {
+			if (!loading) {
+				callOrder.push('setIsLoading(false)');
+			}
+		});
+		const finallyHandler = jest.fn(() => {
+			callOrder.push('finallyHandler');
+		});
+
+		await act(async () => {
+			await result.current.executeAction({
+				action: mockAction,
+				errorMessage: 'Error',
+				finallyHandler,
+			});
+		});
+
+		expect(finallyHandler).toHaveBeenCalled();
+		expect(callOrder).toEqual(['setIsLoading(false)', 'finallyHandler']);
+	});
+
+	it('should call finallyHandler even when action throws', async () => {
+		const { result } = renderHook(() => useApiAction(setError, setIsLoading));
+		const mockAction = jest.fn().mockRejectedValue(new Error('Failed'));
+		const finallyHandler = jest.fn();
+
+		await act(async () => {
+			await result.current.executeAction({
+				action: mockAction,
+				errorMessage: 'Error',
+				finallyHandler,
+			});
+		});
+
+		expect(finallyHandler).toHaveBeenCalled();
+		expect(setIsLoading).toHaveBeenLastCalledWith(false);
+	});
+
+	it('should work without okHandler', async () => {
+		const { result } = renderHook(() => useApiAction(setError, setIsLoading));
+		const mockAction = jest.fn<Promise<ApiResponse<string>>, []>().mockResolvedValue({
+			data: 'data',
+			ok: true,
+			status: 200,
+		});
+
+		await act(async () => {
+			await result.current.executeAction({
+				action: mockAction,
+				errorMessage: 'Error',
+			});
+		});
+
+		expect(setIsLoading).toHaveBeenCalledWith(false);
 		expect(setError).toHaveBeenCalledWith(null);
 	});
 });

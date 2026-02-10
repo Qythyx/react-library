@@ -1,39 +1,48 @@
 import { useCallback } from 'react';
 
-import { ApiResponse } from '../utils/types.js';
+import { ApiResponse, BadResponse } from '../utils/types.js';
 import { getStatusMessage } from '../utils/StatusCodes.js';
+
+export interface ExecuteActionOptions<TData> {
+	action: () => Promise<ApiResponse<TData>>;
+	errorHandler?: (error: unknown) => void;
+	errorMessage: string;
+	failedHandler?: (response: BadResponse) => void;
+	finallyHandler?: () => void;
+	okHandler?: (data: TData) => void;
+}
 
 export const useApiAction = (
 	setError: (error: null | string) => void,
 	setIsLoading: (isLoading: boolean) => void,
 ): {
-	executeAction: <TData>(
-		action: () => Promise<ApiResponse<TData>>,
-		onSuccess: (data: TData) => void,
-		errorMessage: string,
-	) => Promise<void>;
+	executeAction: <TData>(options: ExecuteActionOptions<TData>) => Promise<void>;
 } => {
 	const executeAction = useCallback(
-		async <TData>(
-			action: () => Promise<ApiResponse<TData>>,
-			onSuccess: (data: TData) => void,
-			errorMessage: string,
-		): Promise<void> => {
+		async <TData>(options: ExecuteActionOptions<TData>): Promise<void> => {
+			const { action, errorHandler, errorMessage, failedHandler, finallyHandler, okHandler } = options;
 			setIsLoading(true);
 			setError(null);
 
 			try {
 				const response = await action();
 				if (response.ok) {
-					onSuccess(response.data);
+					okHandler?.(response.data);
+				} else if (failedHandler) {
+					failedHandler(response);
 				} else {
 					setError(getStatusMessage(response.status, response.error ?? errorMessage));
 				}
 			} catch (err) {
-				setError(errorMessage);
-				console.error(errorMessage, err);
+				if (errorHandler) {
+					errorHandler(err);
+				} else {
+					setError(errorMessage);
+					console.error(errorMessage, err);
+				}
 			} finally {
 				setIsLoading(false);
+				finallyHandler?.();
 			}
 		},
 		[setIsLoading, setError],
