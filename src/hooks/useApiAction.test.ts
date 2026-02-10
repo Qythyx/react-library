@@ -1,8 +1,13 @@
 import { act, renderHook } from '@testing-library/react';
+import React from 'react';
 
 import { ApiResponse } from '../utils/types.js';
 import { HttpStatus } from '../utils/StatusCodes.js';
 import { useApiAction } from './useApiAction.js';
+
+function getElement(text: string, type: string = 'span') {
+	return React.createElement(type, null, text);
+}
 
 describe('useApiAction', () => {
 	let setError: jest.Mock;
@@ -37,13 +42,13 @@ describe('useApiAction', () => {
 		await act(async () => {
 			await result.current.executeAction({
 				action: mockAction,
-				errorMessage: 'Error message',
+				errorMessage: getElement('Error message'),
 				okHandler,
 			});
 		});
 
 		expect(okHandler).toHaveBeenCalledWith('success data');
-		expect(setError).toHaveBeenCalledWith(null);
+		expect(setError).toHaveBeenCalledWith();
 		expect(setIsLoading).toHaveBeenCalledWith(true);
 		expect(setIsLoading).toHaveBeenCalledWith(false);
 	});
@@ -60,13 +65,13 @@ describe('useApiAction', () => {
 		await act(async () => {
 			await result.current.executeAction({
 				action: mockAction,
-				errorMessage: 'Default error',
+				errorMessage: getElement('Default error'),
 				okHandler,
 			});
 		});
 
 		expect(okHandler).not.toHaveBeenCalled();
-		expect(setError).toHaveBeenCalledWith('Bad request error');
+		expect(setError).toHaveBeenCalledWith(...[getElement('Default error'), getElement('Bad request error')]);
 	});
 
 	it('should use getStatusMessage for NOT_FOUND status', async () => {
@@ -79,11 +84,11 @@ describe('useApiAction', () => {
 		await act(async () => {
 			await result.current.executeAction({
 				action: mockAction,
-				errorMessage: 'Default error',
+				errorMessage: getElement('Default error'),
 			});
 		});
 
-		expect(setError).toHaveBeenCalledWith('The requested resource was not found');
+		expect(setError).toHaveBeenCalledWith(...[getElement('Default error'), getElement('errors.notFound')]);
 	});
 
 	it('should use getStatusMessage for UNAUTHORIZED status', async () => {
@@ -96,11 +101,11 @@ describe('useApiAction', () => {
 		await act(async () => {
 			await result.current.executeAction({
 				action: mockAction,
-				errorMessage: 'Default error',
+				errorMessage: getElement('Default error'),
 			});
 		});
 
-		expect(setError).toHaveBeenCalledWith('You do not have authorization');
+		expect(setError).toHaveBeenCalledWith(...[getElement('Default error'), getElement('errors.unauthorized')]);
 	});
 
 	it('should handle exceptions and log to console.error', async () => {
@@ -112,14 +117,14 @@ describe('useApiAction', () => {
 		await act(async () => {
 			await result.current.executeAction({
 				action: mockAction,
-				errorMessage: 'Action failed',
+				errorMessage: getElement('Action failed'),
 				okHandler,
 			});
 		});
 
 		expect(okHandler).not.toHaveBeenCalled();
-		expect(setError).toHaveBeenCalledWith('Action failed');
-		expect(consoleSpy).toHaveBeenCalledWith('Action failed', error);
+		expect(setError).toHaveBeenCalledWith(...[getElement('Action failed'), getElement('Network error', 'pre')]);
+		expect(consoleSpy).toHaveBeenCalledWith('<span>Action failed</span>', error);
 	});
 
 	it('should set loading state correctly during execution', async () => {
@@ -133,7 +138,7 @@ describe('useApiAction', () => {
 		await act(async () => {
 			await result.current.executeAction({
 				action: mockAction,
-				errorMessage: 'Error',
+				errorMessage: getElement('Error'),
 			});
 		});
 
@@ -148,7 +153,7 @@ describe('useApiAction', () => {
 		await act(async () => {
 			await result.current.executeAction({
 				action: mockAction,
-				errorMessage: 'Error',
+				errorMessage: getElement('Error'),
 			});
 		});
 
@@ -166,11 +171,13 @@ describe('useApiAction', () => {
 		await act(async () => {
 			await result.current.executeAction({
 				action: mockAction,
-				errorMessage: 'Default error message',
+				errorMessage: getElement('Default error message'),
 			});
 		});
 
-		expect(setError).toHaveBeenCalledWith('Custom server error');
+		expect(setError).toHaveBeenCalledWith(
+			...[getElement('Default error message'), getElement('Custom server error')],
+		);
 	});
 
 	it('should use default error message when response has no error field', async () => {
@@ -183,11 +190,11 @@ describe('useApiAction', () => {
 		await act(async () => {
 			await result.current.executeAction({
 				action: mockAction,
-				errorMessage: 'Default error message',
+				errorMessage: getElement('Default error message'),
 			});
 		});
 
-		expect(setError).toHaveBeenCalledWith('Default error message');
+		expect(setError).toHaveBeenCalledWith(...[getElement('Default error message')]);
 	});
 
 	it('should handle multiple sequential calls', async () => {
@@ -207,7 +214,7 @@ describe('useApiAction', () => {
 		await act(async () => {
 			await result.current.executeAction({
 				action: mockAction1,
-				errorMessage: 'Error',
+				errorMessage: getElement('Error'),
 				okHandler,
 			});
 		});
@@ -217,7 +224,7 @@ describe('useApiAction', () => {
 		await act(async () => {
 			await result.current.executeAction({
 				action: mockAction2,
-				errorMessage: 'Error',
+				errorMessage: getElement('Error'),
 				okHandler,
 			});
 		});
@@ -237,14 +244,14 @@ describe('useApiAction', () => {
 		await act(async () => {
 			await result.current.executeAction({
 				action: mockAction,
-				errorMessage: 'Error',
+				errorMessage: getElement('Error'),
 			});
 		});
 
-		expect(setError).toHaveBeenCalledWith(null);
+		expect(setError).toHaveBeenCalledWith(...[]);
 	});
 
-	it('should call failedHandler instead of setError when provided', async () => {
+	it('should call failedHandler and setError when provided', async () => {
 		const { result } = renderHook(() => useApiAction(setError, setIsLoading));
 		const badResponse = {
 			error: 'Bad request error',
@@ -257,17 +264,17 @@ describe('useApiAction', () => {
 		await act(async () => {
 			await result.current.executeAction({
 				action: mockAction,
-				errorMessage: 'Default error',
+				errorMessage: getElement('Default error'),
 				failedHandler,
 			});
 		});
 
 		expect(failedHandler).toHaveBeenCalledWith(badResponse);
-		expect(setError).toHaveBeenCalledWith(null); // only the initial clear
-		expect(setError).toHaveBeenCalledTimes(1);
+		expect(setError).toHaveBeenCalledWith(...[getElement('Default error'), getElement('Bad request error')]);
+		expect(setError).toHaveBeenCalledTimes(2);
 	});
 
-	it('should call errorHandler instead of default error handling when provided', async () => {
+	it('should call errorHandler and default error handling when provided', async () => {
 		const { result } = renderHook(() => useApiAction(setError, setIsLoading));
 		const error = new Error('Network error');
 		const mockAction = jest.fn().mockRejectedValue(error);
@@ -277,14 +284,14 @@ describe('useApiAction', () => {
 			await result.current.executeAction({
 				action: mockAction,
 				errorHandler,
-				errorMessage: 'Action failed',
+				errorMessage: getElement('Action failed'),
 			});
 		});
 
 		expect(errorHandler).toHaveBeenCalledWith(error);
-		expect(setError).toHaveBeenCalledWith(null); // only the initial clear
-		expect(setError).toHaveBeenCalledTimes(1);
-		expect(consoleSpy).not.toHaveBeenCalled();
+		expect(setError).toHaveBeenCalledWith(...[getElement('Action failed'), getElement('Network error', 'pre')]);
+		expect(setError).toHaveBeenCalledTimes(2);
+		expect(consoleSpy).toHaveBeenCalled();
 	});
 
 	it('should call finallyHandler after setIsLoading(false)', async () => {
@@ -307,7 +314,7 @@ describe('useApiAction', () => {
 		await act(async () => {
 			await result.current.executeAction({
 				action: mockAction,
-				errorMessage: 'Error',
+				errorMessage: getElement('Error'),
 				finallyHandler,
 			});
 		});
@@ -324,7 +331,7 @@ describe('useApiAction', () => {
 		await act(async () => {
 			await result.current.executeAction({
 				action: mockAction,
-				errorMessage: 'Error',
+				errorMessage: getElement('Error'),
 				finallyHandler,
 			});
 		});
@@ -344,11 +351,11 @@ describe('useApiAction', () => {
 		await act(async () => {
 			await result.current.executeAction({
 				action: mockAction,
-				errorMessage: 'Error',
+				errorMessage: getElement('Error'),
 			});
 		});
 
 		expect(setIsLoading).toHaveBeenCalledWith(false);
-		expect(setError).toHaveBeenCalledWith(null);
+		expect(setError).toHaveBeenCalledWith();
 	});
 });

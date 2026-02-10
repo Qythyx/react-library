@@ -1,3 +1,5 @@
+import { t as translate } from 'i18next';
+
 export enum HttpStatus {
 	// Success
 	OK = 200,
@@ -20,12 +22,16 @@ export enum HttpStatus {
 	SERVICE_UNAVAILABLE = 503,
 }
 
-export function getStatusMessage(status: HttpStatus, defaultMessage: string): string {
+export function getStatusMessage(
+	t: typeof translate,
+	status: HttpStatus,
+	defaultMessage: string | undefined,
+): string | undefined {
 	switch (status) {
 		case HttpStatus.NOT_FOUND:
-			return 'The requested resource was not found';
+			return t('errors.notFound');
 		case HttpStatus.UNAUTHORIZED:
-			return 'You do not have authorization';
+			return t('errors.unauthorized');
 		default:
 			return defaultMessage;
 	}

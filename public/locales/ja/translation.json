@@ -11,5 +11,9 @@
 			"total": "全{{count}}件"
 		},
 		"sortBy": "{{label}}で並び替え"
+	},
+	"errors": {
+		"notFound": "リクエストされたリソースが見つかりません",
+		"unauthorized": "認可されていません"
 	}
 }

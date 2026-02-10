@@ -1,3 +1,4 @@
+import { createMockI18n } from '../test-utils/i18nMock.ts';
 import { getStatusMessage, HttpStatus } from './StatusCodes.js';
 
 describe('HttpStatus', () => {
@@ -27,29 +28,33 @@ describe('HttpStatus', () => {
 
 describe('getStatusMessage', () => {
 	it('should return custom message for NOT_FOUND', () => {
-		const result = getStatusMessage(HttpStatus.NOT_FOUND, 'Default message');
-		expect(result).toBe('The requested resource was not found');
+		const result = getStatusMessage(createMockI18n().t, HttpStatus.NOT_FOUND, 'Default message');
+		expect(result).toBe('errors.notFound');
 	});
 
 	it('should return custom message for UNAUTHORIZED', () => {
-		const result = getStatusMessage(HttpStatus.UNAUTHORIZED, 'Default message');
-		expect(result).toBe('You do not have authorization');
+		const result = getStatusMessage(createMockI18n().t, HttpStatus.UNAUTHORIZED, 'Default message');
+		expect(result).toBe('errors.unauthorized');
 	});
 
 	it('should return default message for unknown status codes', () => {
-		const result = getStatusMessage(HttpStatus.OK, 'Custom default');
+		const result = getStatusMessage(createMockI18n().t, HttpStatus.OK, 'Custom default');
 		expect(result).toBe('Custom default');
 	});
 
 	it('should return default message for other status codes', () => {
-		expect(getStatusMessage(HttpStatus.BAD_REQUEST, 'Bad request occurred')).toBe('Bad request occurred');
-		expect(getStatusMessage(HttpStatus.INTERNAL_SERVER_ERROR, 'Server error')).toBe('Server error');
+		expect(getStatusMessage(createMockI18n().t, HttpStatus.BAD_REQUEST, 'Bad request occurred')).toBe(
+			'Bad request occurred',
+		);
+		expect(getStatusMessage(createMockI18n().t, HttpStatus.INTERNAL_SERVER_ERROR, 'Server error')).toBe(
+			'Server error',
+		);
 	});
 
 	it('should handle all defined status codes without throwing', () => {
 		const statusCodes = Object.values(HttpStatus).filter(v => typeof v === 'number');
 		statusCodes.forEach(status => {
-			expect(() => getStatusMessage(status as HttpStatus, 'default')).not.toThrow();
+			expect(() => getStatusMessage(createMockI18n().t, status as HttpStatus, 'default')).not.toThrow();
 		});
 	});
 });

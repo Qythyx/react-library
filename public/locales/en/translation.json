@@ -11,5 +11,9 @@
 			"total": "{{count}} Items"
 		},
 		"sortBy": "Sort by {{label}}"
+	},
+	"errors": {
+		"notFound": "The requested resource was not found",
+		"unauthorized": "You do not have authorization"
 	}
 }
