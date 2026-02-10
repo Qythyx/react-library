@@ -2,12 +2,15 @@ import { act, renderHook } from '@testing-library/react';
 import React from 'react';
 
 import { ApiResponse } from '../utils/types.js';
+import { createMockI18n } from '../test-utils/i18nMock.ts';
 import { HttpStatus } from '../utils/StatusCodes.js';
 import { useApiAction } from './useApiAction.js';
 
 function getElement(text: string, type: string = 'span') {
 	return React.createElement(type, null, text);
 }
+
+const i18n = createMockI18n();
 
 describe('useApiAction', () => {
 	let setError: jest.Mock;
@@ -25,13 +28,13 @@ describe('useApiAction', () => {
 	});
 
 	it('should return executeAction function', () => {
-		const { result } = renderHook(() => useApiAction(setError, setIsLoading));
+		const { result } = renderHook(() => useApiAction(i18n, setError, setIsLoading));
 		expect(result.current.executeAction).toBeDefined();
 		expect(typeof result.current.executeAction).toBe('function');
 	});
 
 	it('should call okHandler when API response is ok', async () => {
-		const { result } = renderHook(() => useApiAction(setError, setIsLoading));
+		const { result } = renderHook(() => useApiAction(i18n, setError, setIsLoading));
 		const mockAction = jest.fn<Promise<ApiResponse<string>>, []>().mockResolvedValue({
 			data: 'success data',
 			ok: true,
@@ -40,11 +43,7 @@ describe('useApiAction', () => {
 		const okHandler = jest.fn();
 
 		await act(async () => {
-			await result.current.executeAction({
-				action: mockAction,
-				errorMessage: getElement('Error message'),
-				okHandler,
-			});
+			await result.current.executeAction(mockAction, getElement('Error message'), okHandler);
 		});
 
 		expect(okHandler).toHaveBeenCalledWith('success data');
@@ -54,7 +53,7 @@ describe('useApiAction', () => {
 	});
 
 	it('should call setError when API response is not ok', async () => {
-		const { result } = renderHook(() => useApiAction(setError, setIsLoading));
+		const { result } = renderHook(() => useApiAction(i18n, setError, setIsLoading));
 		const mockAction = jest.fn<Promise<ApiResponse<string>>, []>().mockResolvedValue({
 			error: 'Bad request error',
 			ok: false,
@@ -63,11 +62,7 @@ describe('useApiAction', () => {
 		const okHandler = jest.fn();
 
 		await act(async () => {
-			await result.current.executeAction({
-				action: mockAction,
-				errorMessage: getElement('Default error'),
-				okHandler,
-			});
+			await result.current.executeAction(mockAction, getElement('Default error'), okHandler);
 		});
 
 		expect(okHandler).not.toHaveBeenCalled();
@@ -75,51 +70,43 @@ describe('useApiAction', () => {
 	});
 
 	it('should use getStatusMessage for NOT_FOUND status', async () => {
-		const { result } = renderHook(() => useApiAction(setError, setIsLoading));
+		const { result } = renderHook(() => useApiAction(i18n, setError, setIsLoading));
 		const mockAction = jest.fn<Promise<ApiResponse<string>>, []>().mockResolvedValue({
 			ok: false,
 			status: HttpStatus.NOT_FOUND,
 		});
 
 		await act(async () => {
-			await result.current.executeAction({
-				action: mockAction,
-				errorMessage: getElement('Default error'),
-			});
+			await result.current.executeAction(mockAction, getElement('Default error'));
 		});
 
-		expect(setError).toHaveBeenCalledWith(...[getElement('Default error'), getElement('errors.notFound')]);
+		expect(setError).toHaveBeenCalledWith(...[getElement('Default error'), getElement(i18n.t('errors.notFound'))]);
 	});
 
 	it('should use getStatusMessage for UNAUTHORIZED status', async () => {
-		const { result } = renderHook(() => useApiAction(setError, setIsLoading));
+		const { result } = renderHook(() => useApiAction(i18n, setError, setIsLoading));
 		const mockAction = jest.fn<Promise<ApiResponse<string>>, []>().mockResolvedValue({
 			ok: false,
 			status: HttpStatus.UNAUTHORIZED,
 		});
 
 		await act(async () => {
-			await result.current.executeAction({
-				action: mockAction,
-				errorMessage: getElement('Default error'),
-			});
+			await result.current.executeAction(mockAction, getElement('Default error'));
 		});
 
-		expect(setError).toHaveBeenCalledWith(...[getElement('Default error'), getElement('errors.unauthorized')]);
+		expect(setError).toHaveBeenCalledWith(
+			...[getElement('Default error'), getElement('You do not have authorization')],
+		);
 	});
 
 	it('should handle exceptions and log to console.error', async () => {
-		const { result } = renderHook(() => useApiAction(setError, setIsLoading));
+		const { result } = renderHook(() => useApiAction(i18n, setError, setIsLoading));
 		const error = new Error('Network error');
 		const mockAction = jest.fn().mockRejectedValue(error);
 		const okHandler = jest.fn();
 
 		await act(async () => {
-			await result.current.executeAction({
-				action: mockAction,
-				errorMessage: getElement('Action failed'),
-				okHandler,
-			});
+			await result.current.executeAction(mockAction, getElement('Action failed'), okHandler);
 		});
 
 		expect(okHandler).not.toHaveBeenCalled();
@@ -128,7 +115,7 @@ describe('useApiAction', () => {
 	});
 
 	it('should set loading state correctly during execution', async () => {
-		const { result } = renderHook(() => useApiAction(setError, setIsLoading));
+		const { result } = renderHook(() => useApiAction(i18n, setError, setIsLoading));
 		const mockAction = jest.fn<Promise<ApiResponse<string>>, []>().mockResolvedValue({
 			data: 'data',
 			ok: true,
@@ -136,10 +123,7 @@ describe('useApiAction', () => {
 		});
 
 		await act(async () => {
-			await result.current.executeAction({
-				action: mockAction,
-				errorMessage: getElement('Error'),
-			});
+			await result.current.executeAction(mockAction, getElement('Error'));
 		});
 
 		expect(setIsLoading).toHaveBeenNthCalledWith(1, true);
@@ -147,21 +131,18 @@ describe('useApiAction', () => {
 	});
 
 	it('should set loading to false even when action throws', async () => {
-		const { result } = renderHook(() => useApiAction(setError, setIsLoading));
+		const { result } = renderHook(() => useApiAction(i18n, setError, setIsLoading));
 		const mockAction = jest.fn().mockRejectedValue(new Error('Failed'));
 
 		await act(async () => {
-			await result.current.executeAction({
-				action: mockAction,
-				errorMessage: getElement('Error'),
-			});
+			await result.current.executeAction(mockAction, getElement('Error'));
 		});
 
 		expect(setIsLoading).toHaveBeenLastCalledWith(false);
 	});
 
 	it('should use error message from response when available', async () => {
-		const { result } = renderHook(() => useApiAction(setError, setIsLoading));
+		const { result } = renderHook(() => useApiAction(i18n, setError, setIsLoading));
 		const mockAction = jest.fn<Promise<ApiResponse<string>>, []>().mockResolvedValue({
 			error: 'Custom server error',
 			ok: false,
@@ -169,10 +150,7 @@ describe('useApiAction', () => {
 		});
 
 		await act(async () => {
-			await result.current.executeAction({
-				action: mockAction,
-				errorMessage: getElement('Default error message'),
-			});
+			await result.current.executeAction(mockAction, getElement('Default error message'));
 		});
 
 		expect(setError).toHaveBeenCalledWith(
@@ -181,24 +159,21 @@ describe('useApiAction', () => {
 	});
 
 	it('should use default error message when response has no error field', async () => {
-		const { result } = renderHook(() => useApiAction(setError, setIsLoading));
+		const { result } = renderHook(() => useApiAction(i18n, setError, setIsLoading));
 		const mockAction = jest.fn<Promise<ApiResponse<string>>, []>().mockResolvedValue({
 			ok: false,
 			status: HttpStatus.INTERNAL_SERVER_ERROR,
 		});
 
 		await act(async () => {
-			await result.current.executeAction({
-				action: mockAction,
-				errorMessage: getElement('Default error message'),
-			});
+			await result.current.executeAction(mockAction, getElement('Default error message'));
 		});
 
 		expect(setError).toHaveBeenCalledWith(...[getElement('Default error message')]);
 	});
 
 	it('should handle multiple sequential calls', async () => {
-		const { result } = renderHook(() => useApiAction(setError, setIsLoading));
+		const { result } = renderHook(() => useApiAction(i18n, setError, setIsLoading));
 		const mockAction1 = jest.fn<Promise<ApiResponse<string>>, []>().mockResolvedValue({
 			data: 'first',
 			ok: true,
@@ -212,21 +187,13 @@ describe('useApiAction', () => {
 		const okHandler = jest.fn();
 
 		await act(async () => {
-			await result.current.executeAction({
-				action: mockAction1,
-				errorMessage: getElement('Error'),
-				okHandler,
-			});
+			await result.current.executeAction(mockAction1, getElement('Error'), okHandler);
 		});
 
 		expect(okHandler).toHaveBeenCalledWith('first');
 
 		await act(async () => {
-			await result.current.executeAction({
-				action: mockAction2,
-				errorMessage: getElement('Error'),
-				okHandler,
-			});
+			await result.current.executeAction(mockAction2, getElement('Error'), okHandler);
 		});
 
 		expect(okHandler).toHaveBeenCalledWith('second');
@@ -234,7 +201,7 @@ describe('useApiAction', () => {
 	});
 
 	it('should clear previous error before new action', async () => {
-		const { result } = renderHook(() => useApiAction(setError, setIsLoading));
+		const { result } = renderHook(() => useApiAction(i18n, setError, setIsLoading));
 		const mockAction = jest.fn<Promise<ApiResponse<string>>, []>().mockResolvedValue({
 			data: 'data',
 			ok: true,
@@ -242,17 +209,14 @@ describe('useApiAction', () => {
 		});
 
 		await act(async () => {
-			await result.current.executeAction({
-				action: mockAction,
-				errorMessage: getElement('Error'),
-			});
+			await result.current.executeAction(mockAction, getElement('Error'));
 		});
 
 		expect(setError).toHaveBeenCalledWith(...[]);
 	});
 
 	it('should call failedHandler and setError when provided', async () => {
-		const { result } = renderHook(() => useApiAction(setError, setIsLoading));
+		const { result } = renderHook(() => useApiAction(i18n, setError, setIsLoading));
 		const badResponse = {
 			error: 'Bad request error',
 			ok: false as const,
@@ -262,11 +226,7 @@ describe('useApiAction', () => {
 		const failedHandler = jest.fn();
 
 		await act(async () => {
-			await result.current.executeAction({
-				action: mockAction,
-				errorMessage: getElement('Default error'),
-				failedHandler,
-			});
+			await result.current.executeAction(mockAction, getElement('Default error'), undefined, failedHandler);
 		});
 
 		expect(failedHandler).toHaveBeenCalledWith(badResponse);
@@ -275,17 +235,19 @@ describe('useApiAction', () => {
 	});
 
 	it('should call errorHandler and default error handling when provided', async () => {
-		const { result } = renderHook(() => useApiAction(setError, setIsLoading));
+		const { result } = renderHook(() => useApiAction(i18n, setError, setIsLoading));
 		const error = new Error('Network error');
 		const mockAction = jest.fn().mockRejectedValue(error);
 		const errorHandler = jest.fn();
 
 		await act(async () => {
-			await result.current.executeAction({
-				action: mockAction,
+			await result.current.executeAction(
+				mockAction,
+				getElement('Action failed'),
+				undefined,
+				undefined,
 				errorHandler,
-				errorMessage: getElement('Action failed'),
-			});
+			);
 		});
 
 		expect(errorHandler).toHaveBeenCalledWith(error);
@@ -295,7 +257,7 @@ describe('useApiAction', () => {
 	});
 
 	it('should call finallyHandler after setIsLoading(false)', async () => {
-		const { result } = renderHook(() => useApiAction(setError, setIsLoading));
+		const { result } = renderHook(() => useApiAction(i18n, setError, setIsLoading));
 		const mockAction = jest.fn<Promise<ApiResponse<string>>, []>().mockResolvedValue({
 			data: 'data',
 			ok: true,
@@ -312,11 +274,14 @@ describe('useApiAction', () => {
 		});
 
 		await act(async () => {
-			await result.current.executeAction({
-				action: mockAction,
-				errorMessage: getElement('Error'),
+			await result.current.executeAction(
+				mockAction,
+				getElement('Error'),
+				undefined,
+				undefined,
+				undefined,
 				finallyHandler,
-			});
+			);
 		});
 
 		expect(finallyHandler).toHaveBeenCalled();
@@ -324,16 +289,19 @@ describe('useApiAction', () => {
 	});
 
 	it('should call finallyHandler even when action throws', async () => {
-		const { result } = renderHook(() => useApiAction(setError, setIsLoading));
+		const { result } = renderHook(() => useApiAction(i18n, setError, setIsLoading));
 		const mockAction = jest.fn().mockRejectedValue(new Error('Failed'));
 		const finallyHandler = jest.fn();
 
 		await act(async () => {
-			await result.current.executeAction({
-				action: mockAction,
-				errorMessage: getElement('Error'),
+			await result.current.executeAction(
+				mockAction,
+				getElement('Error'),
+				undefined,
+				undefined,
+				undefined,
 				finallyHandler,
-			});
+			);
 		});
 
 		expect(finallyHandler).toHaveBeenCalled();
@@ -341,7 +309,7 @@ describe('useApiAction', () => {
 	});
 
 	it('should work without okHandler', async () => {
-		const { result } = renderHook(() => useApiAction(setError, setIsLoading));
+		const { result } = renderHook(() => useApiAction(i18n, setError, setIsLoading));
 		const mockAction = jest.fn<Promise<ApiResponse<string>>, []>().mockResolvedValue({
 			data: 'data',
 			ok: true,
@@ -349,10 +317,7 @@ describe('useApiAction', () => {
 		});
 
 		await act(async () => {
-			await result.current.executeAction({
-				action: mockAction,
-				errorMessage: getElement('Error'),
-			});
+			await result.current.executeAction(mockAction, getElement('Error'));
 		});
 
 		expect(setIsLoading).toHaveBeenCalledWith(false);

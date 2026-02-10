@@ -1,9 +1,10 @@
-import { i18n, TFunction } from 'i18next';
+import { i18n } from 'i18next';
 import React, { useCallback } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 
 import { ApiResponse, BadResponse } from '../utils/types.js';
 import { getStatusMessage } from '../utils/StatusCodes.js';
+import { loadTranslations } from '../utils/loadTranslations.js';
 
 export interface ExecuteActionOptions<TData> {
 	action: () => Promise<ApiResponse<TData>>;
@@ -11,26 +12,41 @@ export interface ExecuteActionOptions<TData> {
 	errorMessage: React.ReactElement;
 	failedHandler?: (response: BadResponse) => void;
 	finallyHandler?: () => void;
-	i18n?: i18n;
 	okHandler?: (data: TData) => void;
 }
 
 export const useApiAction = (
+	i18n: i18n,
 	setError?: (...errors: (null | React.ReactElement)[]) => void,
 	setIsLoading?: (isLoading: boolean) => void,
 ): {
-	executeAction: <TData>(options: ExecuteActionOptions<TData>) => Promise<void>;
+	executeAction: <TData>(
+		action: () => Promise<ApiResponse<TData>>,
+		errorMessage: React.ReactElement,
+		okHandler?: (data: TData) => void,
+		failedHandler?: (response: BadResponse) => void,
+		errorHandler?: (error: unknown) => void,
+		finallyHandler?: () => void,
+	) => Promise<void>;
 } => {
+	loadTranslations(i18n);
+
 	const executeAction = useCallback(
-		async <TData>(options: ExecuteActionOptions<TData>): Promise<void> => {
+		async <TData>(
+			action: () => Promise<ApiResponse<TData>>,
+			errorMessage: React.ReactElement,
+			okHandler?: (data: TData) => void,
+			failedHandler?: (response: BadResponse) => void,
+			errorHandler?: (error: unknown) => void,
+			finallyHandler?: () => void,
+		): Promise<void> => {
 			const filteredSetError = (...errors: (null | React.ReactElement)[]): void => {
 				const filtered = errors.filter(Boolean);
 				if (filtered.length > 0) {
 					setError?.(...filtered);
 				}
 			};
-			const { action, errorHandler, errorMessage, failedHandler, finallyHandler, i18n, okHandler } = options;
-			const { t } = i18n ?? { t: ((key: string): string => key) as TFunction };
+			const { t } = i18n;
 			setIsLoading?.(true);
 			setError?.();
 

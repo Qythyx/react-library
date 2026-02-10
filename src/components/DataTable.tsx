@@ -18,6 +18,7 @@ import { i18n, TFunction } from 'i18next';
 import { KeyboardArrowDown, KeyboardArrowUp, NavigateBefore, NavigateNext } from '@mui/icons-material';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 
+import { loadTranslations } from '../utils/loadTranslations.js';
 import { NumberField } from './NumberField.js';
 import { useDebounce } from '../hooks/useDebounce.js';
 import { useLocalStorage } from '../hooks/useLocalStorage.js';
@@ -109,25 +110,8 @@ const DataTableComponent = <T extends object>({
 	scrollInternally = false,
 	totalCount,
 }: DataTableProps<T>): React.ReactElement => {
+	loadTranslations(i18n);
 	const { t } = i18n ?? { t: ((key: string): string => key) as TFunction };
-	const [, forceUpdate] = useState({});
-
-	// Add library translations on mount
-	if (i18n) {
-		useEffect(() => {
-			Promise.all([
-				import('../../public/locales/en/translation.json').then(en => {
-					i18n.addResourceBundle('en', 'translation', en.default, true, false);
-				}),
-				import('../../public/locales/ja/translation.json').then(ja => {
-					i18n.addResourceBundle('ja', 'translation', ja.default, true, false);
-				}),
-			]).then(() => {
-				// Force re-render after translations are loaded
-				forceUpdate({});
-			});
-		}, [i18n]);
-	}
 
 	const getKey = (area: string): string => `${persistenceKey}-table-${area}`;
 
