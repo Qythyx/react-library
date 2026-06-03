@@ -32,7 +32,7 @@ function App(): React.ReactElement {
 				.map(() => '#'.repeat(Math.floor(Math.random() * TestExtraWordLength + 1)))
 				.join(' ');
 		return (
-			<Stack alignItems="center" direction="row" spacing={1} sx={{ height: '100%' }}>
+			<Stack direction="row" spacing={1} sx={{ alignItems: 'center', height: '100%' }}>
 				<Thumbnail
 					imageUrl={`https://picsum.photos/seed/${index + 1}/${getSize()}/${getSize()}`}
 					sx={{
@@ -93,23 +93,23 @@ function App(): React.ReactElement {
 				scrollInternally={scrollInternally}
 				totalCount={100}
 			/>
-			<Stack direction="row" justifyContent="space-between" width="100%">
-				<Stack alignItems="center" direction="row">
+			<Stack direction="row" sx={{ justifyContent: 'space-between', width: '100%' }}>
+				<Stack direction="row" sx={{ alignItems: 'center' }}>
 					Is Loading <Checkbox checked={isLoading} onChange={e => setIsLoading(e.target.checked)} />{' '}
 				</Stack>
-				<Stack alignItems="center" direction="row">
+				<Stack direction="row" sx={{ alignItems: 'center' }}>
 					Is Empty <Checkbox checked={isEmpty} onChange={e => setIsEmpty(e.target.checked)} />{' '}
 				</Stack>
-				<Stack alignItems="center" direction="row">
+				<Stack direction="row" sx={{ alignItems: 'center' }}>
 					Scroll Internally{' '}
 					<Checkbox checked={scrollInternally} onChange={e => setScrollInternally(e.target.checked)} />{' '}
 				</Stack>
 			</Stack>
-			<Stack alignItems="center" direction="row" spacing={1}>
+			<Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
 				<h2>DateField</h2>
 				<DateField onChange={val => setDate(val)} value={date} />
 			</Stack>
-			<Stack alignItems="center" direction="row" spacing={1}>
+			<Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
 				<h2>NumberField</h2>
 				<NumberField onChange={setNumber} value={number} />
 			</Stack>

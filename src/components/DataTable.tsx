@@ -321,7 +321,7 @@ const DataTableComponent = <T extends object>({
 		() => (
 			<TableRow>
 				<TableCell align="center" colSpan={columns.length}>
-					<Typography color="text.secondary" fontStyle="italic" variant="body2">
+					<Typography color="text.secondary" sx={{ fontStyle: 'italic' }} variant="body2">
 						{emptyMessage ?? t('dataTable.emptyMessage')}
 					</Typography>
 				</TableCell>
@@ -432,7 +432,7 @@ const DataTableComponent = <T extends object>({
 						{t('dataTable.list.total', { count: totalCount })}
 					</Typography>
 
-					<Stack alignItems="center" direction="row" spacing={1}>
+					<Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
 						{!paginationSettings.showAll && (
 							<>
 								<IconButton
@@ -474,9 +474,9 @@ const DataTableComponent = <T extends object>({
 						)}
 					</Stack>
 
-					<Stack alignItems="center" direction="row" spacing={2}>
+					<Stack direction="row" spacing={2} sx={{ alignItems: 'center' }}>
 						{!paginationSettings.showAll && (
-							<Stack alignItems="center" direction="row" spacing={1}>
+							<Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
 								<Typography color="text.secondary" variant="body2">
 									{t('dataTable.list.itemsPerPage')}
 								</Typography>
