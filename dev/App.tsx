@@ -1,4 +1,4 @@
-import { Box, Checkbox, Stack } from '@mui/material';
+import { Box, Checkbox, Stack, TextField } from '@mui/material';
 import React, { useCallback, useState } from 'react';
 
 import { Column, DataTable, DateField, LoadParams, NumberField, Thumbnail } from '../src/index.ts';
@@ -12,6 +12,7 @@ const TestExtraWordLength = 25;
 
 function App(): React.ReactElement {
 	const [date, setDate] = useState<string | undefined>(new Date().toISOString());
+	const [timeZone, setTimeZone] = useState('Asia/Tokyo');
 	const [number, setNumber] = useState(0);
 	const [isEmpty, setIsEmpty] = useState(false);
 	const [isLoading, setIsLoading] = useState(false);
@@ -107,7 +108,15 @@ function App(): React.ReactElement {
 			</Stack>
 			<Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
 				<h2>DateField</h2>
-				<DateField onChange={val => setDate(val)} value={date} />
+				<DateField onChange={val => setDate(val)} timeZone={timeZone} value={date} />
+				<TextField
+					label="Time Zone"
+					onChange={e => setTimeZone(e.target.value)}
+					placeholder="Asia/Tokyo"
+					size="small"
+					value={timeZone}
+				/>
+				<Box sx={{ color: 'text.secondary' }}>UTC: {date ?? '(none)'}</Box>
 			</Stack>
 			<Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
 				<h2>NumberField</h2>
