@@ -6,9 +6,21 @@ import { createMockI18n } from '../test-utils/i18nMock.ts';
 import { HttpStatus } from '../utils/StatusCodes.js';
 import { useApiAction } from './useApiAction.js';
 
+function createDeferred<T>() {
+	let reject!: (reason: unknown) => void;
+	let resolve!: (value: T) => void;
+	const promise = new Promise<T>((res, rej) => {
+		reject = rej;
+		resolve = res;
+	});
+	return { promise, reject, resolve };
+}
+
 function getElement(text: string, type: string = 'span') {
 	return React.createElement(type, null, text);
 }
+
+const ok = (data: string): ApiResponse<string> => ({ data, ok: true, status: 200 });
 
 const i18n = createMockI18n();
 
@@ -322,5 +334,217 @@ describe('useApiAction', () => {
 
 		expect(setIsLoading).toHaveBeenCalledWith(false);
 		expect(setError).toHaveBeenCalledWith();
+	});
+
+	it('should accept an options object', async () => {
+		const { result } = renderHook(() => useApiAction(i18n, setError, setIsLoading));
+		const okHandler = jest.fn();
+		const finallyHandler = jest.fn();
+
+		await act(async () => {
+			await result.current.executeAction({
+				action: () => Promise.resolve(ok('data')),
+				errorMessage: getElement('Error'),
+				finallyHandler,
+				okHandler,
+			});
+		});
+
+		expect(okHandler).toHaveBeenCalledWith('data');
+		expect(finallyHandler).toHaveBeenCalled();
+		expect(setIsLoading).toHaveBeenLastCalledWith(false);
+	});
+
+	it('should apply only the newest result when calls share a supersedeKey', async () => {
+		const { result } = renderHook(() => useApiAction(i18n, setError, setIsLoading));
+		const first = createDeferred<ApiResponse<string>>();
+		const second = createDeferred<ApiResponse<string>>();
+		const okHandler = jest.fn();
+
+		await act(async () => {
+			const calls = [
+				result.current.executeAction({
+					action: () => first.promise,
+					errorMessage: getElement('Error'),
+					okHandler,
+					supersedeKey: 'list',
+				}),
+				result.current.executeAction({
+					action: () => second.promise,
+					errorMessage: getElement('Error'),
+					okHandler,
+					supersedeKey: 'list',
+				}),
+			];
+			second.resolve(ok('second'));
+			first.resolve(ok('first'));
+			await Promise.all(calls);
+		});
+
+		expect(okHandler).toHaveBeenCalledTimes(1);
+		expect(okHandler).toHaveBeenCalledWith('second');
+	});
+
+	it('should abort the signal given to a superseded action', async () => {
+		const { result } = renderHook(() => useApiAction(i18n, setError, setIsLoading));
+		const deferreds = [createDeferred<ApiResponse<string>>(), createDeferred<ApiResponse<string>>()];
+		const signals: AbortSignal[] = [];
+
+		await act(async () => {
+			const calls = deferreds.map(deferred =>
+				result.current.executeAction({
+					action: (signal: AbortSignal) => {
+						signals.push(signal);
+						return deferred.promise;
+					},
+					errorMessage: getElement('Error'),
+					supersedeKey: 'list',
+				}),
+			);
+			deferreds.forEach(deferred => deferred.resolve(ok('data')));
+			await Promise.all(calls);
+		});
+
+		expect(signals.map(signal => signal.aborted)).toEqual([true, false]);
+	});
+
+	it('should not report an error from a superseded call', async () => {
+		const { result } = renderHook(() => useApiAction(i18n, setError, setIsLoading));
+		const first = createDeferred<ApiResponse<string>>();
+		const second = createDeferred<ApiResponse<string>>();
+		const failedHandler = jest.fn();
+
+		await act(async () => {
+			const calls = [
+				result.current.executeAction({
+					action: () => first.promise,
+					errorMessage: getElement('Load failed'),
+					failedHandler,
+					supersedeKey: 'list',
+				}),
+				result.current.executeAction({
+					action: () => second.promise,
+					errorMessage: getElement('Load failed'),
+					failedHandler,
+					supersedeKey: 'list',
+				}),
+			];
+			second.resolve(ok('second'));
+			first.resolve({ error: 'Gateway timeout', ok: false, status: HttpStatus.INTERNAL_SERVER_ERROR });
+			await Promise.all(calls);
+		});
+
+		expect(failedHandler).not.toHaveBeenCalled();
+		expect(setError).not.toHaveBeenCalledWith(getElement('Load failed'), getElement('Gateway timeout'));
+		expect(consoleSpy).not.toHaveBeenCalled();
+	});
+
+	it('should swallow the rejection from an aborted action', async () => {
+		const { result } = renderHook(() => useApiAction(i18n, setError, setIsLoading));
+		const first = createDeferred<ApiResponse<string>>();
+		const second = createDeferred<ApiResponse<string>>();
+		const errorHandler = jest.fn();
+
+		await act(async () => {
+			const calls = [
+				result.current.executeAction({
+					action: () => first.promise,
+					errorHandler,
+					errorMessage: getElement('Load failed'),
+					supersedeKey: 'list',
+				}),
+				result.current.executeAction({
+					action: () => second.promise,
+					errorHandler,
+					errorMessage: getElement('Load failed'),
+					supersedeKey: 'list',
+				}),
+			];
+			second.resolve(ok('second'));
+			first.reject(new DOMException('The operation was aborted.', 'AbortError'));
+			await Promise.all(calls);
+		});
+
+		expect(errorHandler).not.toHaveBeenCalled();
+		expect(consoleSpy).not.toHaveBeenCalled();
+	});
+
+	it('should not call finallyHandler for a superseded call but should still clear its loading', async () => {
+		const { result } = renderHook(() => useApiAction(i18n, setError, setIsLoading));
+		const first = createDeferred<ApiResponse<string>>();
+		const second = createDeferred<ApiResponse<string>>();
+		const finallyHandler = jest.fn();
+
+		await act(async () => {
+			const calls = [
+				result.current.executeAction({
+					action: () => first.promise,
+					errorMessage: getElement('Error'),
+					finallyHandler,
+					supersedeKey: 'list',
+				}),
+				result.current.executeAction({
+					action: () => second.promise,
+					errorMessage: getElement('Error'),
+					finallyHandler,
+					supersedeKey: 'list',
+				}),
+			];
+			second.resolve(ok('second'));
+			first.resolve(ok('first'));
+			await Promise.all(calls);
+		});
+
+		expect(finallyHandler).toHaveBeenCalledTimes(1);
+		expect(setIsLoading.mock.calls).toEqual([[true], [true], [false], [false]]);
+	});
+
+	it('should not supersede calls under a different key', async () => {
+		const { result } = renderHook(() => useApiAction(i18n, setError, setIsLoading));
+		const users = createDeferred<ApiResponse<string>>();
+		const beverages = createDeferred<ApiResponse<string>>();
+		const okHandler = jest.fn();
+
+		await act(async () => {
+			const calls = [
+				result.current.executeAction({
+					action: () => users.promise,
+					errorMessage: getElement('Error'),
+					okHandler,
+					supersedeKey: 'users',
+				}),
+				result.current.executeAction({
+					action: () => beverages.promise,
+					errorMessage: getElement('Error'),
+					okHandler,
+					supersedeKey: 'beverages',
+				}),
+			];
+			beverages.resolve(ok('beverages'));
+			users.resolve(ok('users'));
+			await Promise.all(calls);
+		});
+
+		expect(okHandler).toHaveBeenCalledWith('users');
+		expect(okHandler).toHaveBeenCalledWith('beverages');
+	});
+
+	it('should not supersede a call made without a key', async () => {
+		const { result } = renderHook(() => useApiAction(i18n, setError, setIsLoading));
+		const first = createDeferred<ApiResponse<string>>();
+		const second = createDeferred<ApiResponse<string>>();
+		const okHandler = jest.fn();
+
+		await act(async () => {
+			const calls = [
+				result.current.executeAction(() => first.promise, getElement('Error'), okHandler),
+				result.current.executeAction(() => second.promise, getElement('Error'), okHandler),
+			];
+			second.resolve(ok('second'));
+			first.resolve(ok('first'));
+			await Promise.all(calls);
+		});
+
+		expect(okHandler).toHaveBeenCalledTimes(2);
 	});
 });
