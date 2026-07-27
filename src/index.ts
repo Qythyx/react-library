@@ -11,7 +11,8 @@ export type { ThumbnailRef } from './components/Thumbnail.tsx';
 // Hooks
 export { useApiAction } from './hooks/useApiAction.ts';
 export type { ApiAction, ExecuteAction, ExecuteActionOptions } from './hooks/useApiAction.ts';
-export { useDebounce } from './hooks/useDebounce.ts';
+export { useDebouncedState } from './hooks/useDebouncedState.ts';
+export { useDebouncedValue } from './hooks/useDebouncedValue.ts';
 export { getStorageValue, useLocalStorage } from './hooks/useLocalStorage.tsx';
 export { type ParamTypeRegistry, useRequiredParams } from './hooks/useRequiredParams.ts';
 

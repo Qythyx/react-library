@@ -15,7 +15,8 @@ A reusable React component and hooks library built with TypeScript, Material-UI,
 ### Hooks
 
 - **useApiAction** - Execute API calls with error handling and loading states
-- **useDebounce** - Debounce state updates with configurable delay
+- **useDebouncedState** - Own a value and a debounced copy of it, with configurable delay
+- **useDebouncedValue** - Debounce a value owned elsewhere, such as a prop
 - **useLocalStorage** - Persist state to localStorage automatically
 
 ### Utilities

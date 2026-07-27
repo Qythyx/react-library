@@ -1,8 +1,8 @@
 import { act, renderHook } from '@testing-library/react';
 
-import { useDebounce } from './useDebounce.js';
+import { useDebouncedState } from './useDebouncedState.js';
 
-describe('useDebounce', () => {
+describe('useDebouncedState', () => {
 	beforeEach(() => {
 		jest.useFakeTimers();
 	});
@@ -15,7 +15,7 @@ describe('useDebounce', () => {
 	});
 
 	it('should return initial value immediately', () => {
-		const { result } = renderHook(() => useDebounce('initial'));
+		const { result } = renderHook(() => useDebouncedState('initial'));
 		const [debouncedValue, , immediateValue] = result.current;
 
 		expect(debouncedValue).toBe('initial');
@@ -23,7 +23,7 @@ describe('useDebounce', () => {
 	});
 
 	it('should debounce value after default 400ms delay', () => {
-		const { result } = renderHook(() => useDebounce('initial'));
+		const { result } = renderHook(() => useDebouncedState('initial'));
 
 		act(() => {
 			result.current[1]('updated');
@@ -40,7 +40,7 @@ describe('useDebounce', () => {
 	});
 
 	it('should debounce value after custom delay', () => {
-		const { result } = renderHook(() => useDebounce('initial', 1000));
+		const { result } = renderHook(() => useDebouncedState('initial', 1000));
 
 		act(() => {
 			result.current[1]('updated');
@@ -60,7 +60,7 @@ describe('useDebounce', () => {
 	});
 
 	it('should cancel previous timeout on rapid updates', () => {
-		const { result } = renderHook(() => useDebounce('initial'));
+		const { result } = renderHook(() => useDebouncedState('initial'));
 
 		act(() => {
 			result.current[1]('first');
@@ -88,7 +88,7 @@ describe('useDebounce', () => {
 	});
 
 	it('should provide immediate update when bypass flag is true', () => {
-		const { result } = renderHook(() => useDebounce('initial'));
+		const { result } = renderHook(() => useDebouncedState('initial'));
 
 		act(() => {
 			result.current[1]('bypassed', true);
@@ -99,7 +99,7 @@ describe('useDebounce', () => {
 	});
 
 	it('should return tuple with debouncedValue, setValue, and immediateValue', () => {
-		const { result } = renderHook(() => useDebounce(0));
+		const { result } = renderHook(() => useDebouncedState(0));
 		const [debouncedValue, setValue, immediateValue] = result.current;
 
 		expect(typeof debouncedValue).toBe('number');
@@ -108,7 +108,7 @@ describe('useDebounce', () => {
 	});
 
 	it('should handle functional updates', () => {
-		const { result } = renderHook(() => useDebounce(5));
+		const { result } = renderHook(() => useDebouncedState(5));
 
 		act(() => {
 			result.current[1](prev => prev + 1);
@@ -124,18 +124,18 @@ describe('useDebounce', () => {
 	});
 
 	it('should work with different data types', () => {
-		const { result: stringResult } = renderHook(() => useDebounce('text'));
+		const { result: stringResult } = renderHook(() => useDebouncedState('text'));
 		expect(stringResult.current[0]).toBe('text');
 
-		const { result: numberResult } = renderHook(() => useDebounce(42));
+		const { result: numberResult } = renderHook(() => useDebouncedState(42));
 		expect(numberResult.current[0]).toBe(42);
 
-		const { result: objectResult } = renderHook(() => useDebounce({ key: 'value' }));
+		const { result: objectResult } = renderHook(() => useDebouncedState({ key: 'value' }));
 		expect(objectResult.current[0]).toEqual({ key: 'value' });
 	});
 
 	it('should cleanup timeout on unmount', () => {
-		const { result, unmount } = renderHook(() => useDebounce('initial'));
+		const { result, unmount } = renderHook(() => useDebouncedState('initial'));
 
 		act(() => {
 			result.current[1]('updated');
@@ -151,7 +151,7 @@ describe('useDebounce', () => {
 	});
 
 	it('should update immediateValue synchronously', () => {
-		const { result } = renderHook(() => useDebounce('initial'));
+		const { result } = renderHook(() => useDebouncedState('initial'));
 
 		act(() => {
 			result.current[1]('new value');

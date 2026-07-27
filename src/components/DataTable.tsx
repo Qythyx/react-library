@@ -20,7 +20,8 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { loadTranslations } from '../utils/loadTranslations.js';
 import { NumberField } from './NumberField.js';
-import { useDebounce } from '../hooks/useDebounce.js';
+import { useDebouncedState } from '../hooks/useDebouncedState.js';
+import { useDebouncedValue } from '../hooks/useDebouncedValue.js';
 import { useLocalStorage } from '../hooks/useLocalStorage.js';
 
 export type Column<T> = NonSortableColumn | SortableColumn<T>;
@@ -128,9 +129,9 @@ const DataTableComponent = <T extends object>({
 
 	const [sortBy, setSortBy] = useState<SortableFields<T>>(sortSettings.sortBy as SortableFields<T>);
 	const [sortAscending, setSortAscending] = useState<boolean>(sortSettings.sortAscending);
-	const [debouncedCurrentPage, setCurrentPage, currentPage] = useDebounce(1);
-	const [debouncedPageSize, setPageSize, pageSize] = useDebounce(paginationSettings.pageSize);
-	const [showLoadingIndicator, setShowLoadingIndicator] = useDebounce(isLoading, loadingIndicatorDelay);
+	const [debouncedCurrentPage, setCurrentPage, currentPage] = useDebouncedState(1);
+	const [debouncedPageSize, setPageSize, pageSize] = useDebouncedState(paginationSettings.pageSize);
+	const showLoadingIndicator = useDebouncedValue(isLoading, loadingIndicatorDelay);
 
 	const totalPages = useMemo(
 		() => (paginationSettings.showAll ? 1 : Math.max(1, Math.ceil(totalCount / paginationSettings.pageSize))),
@@ -138,7 +139,6 @@ const DataTableComponent = <T extends object>({
 	);
 
 	useEffect(() => setPageSize(paginationSettings.pageSize), [paginationSettings.pageSize]);
-	useEffect(() => setShowLoadingIndicator(isLoading), [isLoading]);
 	useEffect(
 		() =>
 			onLoad({
