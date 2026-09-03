@@ -10,7 +10,7 @@ export type { ThumbnailRef } from './components/Thumbnail.tsx';
 
 // Hooks
 export { useApiAction } from './hooks/useApiAction.ts';
-export type { ApiAction, ExecuteAction, ExecuteActionOptions } from './hooks/useApiAction.ts';
+export type { ApiAction, ExecuteAction, ExecuteActionOptions, FailedHandler } from './hooks/useApiAction.ts';
 export { useDebouncedState } from './hooks/useDebouncedState.ts';
 export { useDebouncedValue } from './hooks/useDebouncedValue.ts';
 export { getStorageValue, useLocalStorage } from './hooks/useLocalStorage.tsx';
@@ -19,4 +19,4 @@ export { type ParamTypeRegistry, useRequiredParams } from './hooks/useRequiredPa
 // Utils
 export { stringifySorted } from './utils/SortedStringifier.ts';
 export { getStatusMessage, HttpStatus } from './utils/StatusCodes.ts';
-export type { ApiResponse, BadResponse, OkResponse } from './utils/types.ts';
+export type { ApiResponse, FailedResponse, OkResponse } from './utils/types.ts';

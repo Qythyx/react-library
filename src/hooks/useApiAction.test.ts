@@ -1,10 +1,10 @@
 import { act, renderHook } from '@testing-library/react';
 import React from 'react';
 
+import { ApiAction, useApiAction } from './useApiAction.js';
 import { ApiResponse } from '../utils/types.js';
 import { createMockI18n } from '../test-utils/i18nMock.ts';
 import { HttpStatus } from '../utils/StatusCodes.js';
-import { useApiAction } from './useApiAction.js';
 
 function createDeferred<T>() {
 	let reject!: (reason: unknown) => void;
@@ -21,6 +21,14 @@ function getElement(text: string, type: string = 'span') {
 }
 
 const ok = (data: string): ApiResponse<string> => ({ data, ok: true, status: 200 });
+
+type StockReason = 'etag-conflict' | 'out-of-stock';
+
+const rejectingAction = async (signal: AbortSignal): Promise<ApiResponse<string, StockReason>> => ({
+	ok: false,
+	reason: 'etag-conflict',
+	status: signal.aborted ? HttpStatus.BAD_REQUEST : HttpStatus.PRECONDITION_FAILED,
+});
 
 const i18n = createMockI18n();
 
@@ -546,5 +554,61 @@ describe('useApiAction', () => {
 		});
 
 		expect(okHandler).toHaveBeenCalledTimes(2);
+	});
+
+	it('should type the reason in failedHandler without an explicit type argument', async () => {
+		const { result } = renderHook(() => useApiAction(i18n, setError, setIsLoading));
+		const action = async (): Promise<ApiResponse<string, StockReason>> => ({
+			ok: false,
+			reason: 'etag-conflict',
+			status: HttpStatus.PRECONDITION_FAILED,
+		});
+		const seen: StockReason[] = [];
+
+		await act(async () => {
+			await result.current.executeAction({
+				action,
+				errorMessage: getElement('Error message'),
+				failedHandler: response => {
+					if (response.reason !== undefined) {
+						seen.push(response.reason);
+					}
+				},
+			});
+		});
+
+		expect(seen).toEqual(['etag-conflict']);
+	});
+
+	it('should accept an action written without a refusal reason type', async () => {
+		const { result } = renderHook(() => useApiAction(i18n, setError, setIsLoading));
+		const action: ApiAction<string> = () => Promise.resolve(ok('data'));
+		const okHandler = jest.fn();
+
+		await act(async () => {
+			await result.current.executeAction<string>({ action, errorMessage: getElement('Error'), okHandler });
+		});
+
+		expect(okHandler).toHaveBeenCalledWith('data');
+	});
+
+	it('should reject a handler written before an inline action, rather than guess the reason', async () => {
+		const { result } = renderHook(() => useApiAction(i18n, setError, setIsLoading));
+
+		await act(async () => {
+			/* eslint-disable perfectionist/sort-objects -- the wrong order is the point of this test */
+			await result.current.executeAction({
+				failedHandler: response => {
+					expect(response.reason).toBeUndefined();
+				},
+				errorMessage: getElement('Error'),
+				// @ts-expect-error TReason settled as never while the handler above was typed, before
+				// this action was read. Failing here, at the cause, is the diagnostic worth having.
+				action: signal => rejectingAction(signal),
+			});
+			/* eslint-enable perfectionist/sort-objects */
+		});
+
+		expect(setIsLoading).toHaveBeenLastCalledWith(false);
 	});
 });

@@ -2,29 +2,33 @@ import { i18n } from 'i18next';
 import React, { useCallback, useRef } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 
-import { ApiResponse, BadResponse } from '../utils/types.js';
+import { ApiResponse, FailedResponse } from '../utils/types.js';
 import { getStatusMessage } from '../utils/StatusCodes.js';
 import { loadTranslations } from '../utils/loadTranslations.js';
 
-export type ApiAction<TData> = (signal: AbortSignal) => Promise<ApiResponse<TData>>;
+/**
+ * A call to a service that resolves with `TData` on success. `TReason` is the set of refusal reasons
+ * this call can report.
+ */
+export type ApiAction<TData, TReason = never> = (signal: AbortSignal) => Promise<ApiResponse<TData, TReason>>;
 
 export interface ExecuteAction {
-	<TData>(options: ExecuteActionOptions<TData>): Promise<void>;
-	<TData>(
-		action: ApiAction<TData>,
+	<TData, TReason = never>(options: ExecuteActionOptions<TData, TReason>): Promise<void>;
+	<TData, TReason = never>(
+		action: ApiAction<TData, TReason>,
 		errorMessage: React.ReactElement,
 		okHandler?: (data: TData) => void,
-		failedHandler?: (response: BadResponse) => void,
+		failedHandler?: FailedHandler<TReason>,
 		errorHandler?: (error: unknown) => void,
 		finallyHandler?: () => void,
 	): Promise<void>;
 }
 
-export interface ExecuteActionOptions<TData> {
-	action: ApiAction<TData>;
+export interface ExecuteActionOptions<TData, TReason = never> {
+	action: ApiAction<TData, TReason>;
 	errorHandler?: (error: unknown) => void;
 	errorMessage: React.ReactElement;
-	failedHandler?: (response: BadResponse) => void;
+	failedHandler?: FailedHandler<TReason>;
 	finallyHandler?: () => void;
 	okHandler?: (data: TData) => void;
 	/**
@@ -35,18 +39,24 @@ export interface ExecuteActionOptions<TData> {
 	supersedeKey?: string;
 }
 
-type PositionalArgs<TData> = [
+/**
+ * Called when an action resolves with a failure. A thrown error does not arrive here; it goes to the
+ * `errorHandler`.
+ */
+export type FailedHandler<TReason = never> = (response: FailedResponse<TReason>) => void;
+
+type PositionalArgs<TData, TReason = never> = [
 	errorMessage: React.ReactElement,
 	okHandler?: (data: TData) => void,
-	failedHandler?: (response: BadResponse) => void,
+	failedHandler?: FailedHandler<TReason>,
 	errorHandler?: (error: unknown) => void,
 	finallyHandler?: () => void,
 ];
 
-const toOptions = <TData>(
-	optionsOrAction: ApiAction<TData> | ExecuteActionOptions<TData>,
-	positional: PositionalArgs<TData>,
-): ExecuteActionOptions<TData> => {
+const toOptions = <TData, TReason>(
+	optionsOrAction: ApiAction<TData, TReason> | ExecuteActionOptions<TData, TReason>,
+	positional: PositionalArgs<TData, TReason>,
+): ExecuteActionOptions<TData, TReason> => {
 	if (typeof optionsOrAction !== 'function') {
 		return optionsOrAction;
 	}
@@ -66,9 +76,9 @@ export const useApiAction = (
 	const inFlight = useRef(new Map<string, AbortController>());
 
 	const executeAction = useCallback(
-		async <TData>(
-			optionsOrAction: ApiAction<TData> | ExecuteActionOptions<TData>,
-			...positional: PositionalArgs<TData>
+		async <TData, TReason>(
+			optionsOrAction: ApiAction<TData, TReason> | ExecuteActionOptions<TData, TReason>,
+			...positional: PositionalArgs<TData, TReason>
 		): Promise<void> => {
 			const { action, errorHandler, errorMessage, failedHandler, finallyHandler, okHandler, supersedeKey } =
 				toOptions(optionsOrAction, positional);

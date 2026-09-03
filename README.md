@@ -14,7 +14,8 @@ A reusable React component and hooks library built with TypeScript, Material-UI,
 
 ### Hooks
 
-- **useApiAction** - Execute API calls with error handling and loading states
+- **useApiAction** - Execute API calls with error handling and loading states. See
+  [Refusal reasons](#refusal-reasons)
 - **useDebouncedState** - Own a value and a debounced copy of it, with configurable delay
 - **useDebouncedValue** - Debounce a value owned elsewhere, such as a prop
 - **useLocalStorage** - Persist state to localStorage automatically
@@ -23,7 +24,49 @@ A reusable React component and hooks library built with TypeScript, Material-UI,
 
 - **HttpStatus** - HTTP status code enum
 - **getStatusMessage** - Convert status codes to user-friendly messages
-- **ApiResponse** - TypeScript types for API responses
+- **ApiResponse** - TypeScript types for API responses, with an optional caller-defined refusal reason
+
+## Refusal reasons
+
+A failure that carries only `status` and an `error` string leaves a caller who must react to one
+specific refusal with nothing to key on but the HTTP status — a namespace shared with every proxy and
+rate limiter in between, and with the service's own unrelated failures. One endpoint can return `412`
+for a stock shortage, a retry exhaustion and an ETag conflict alike.
+
+The second type argument to `ApiResponse` names the refusals a call can report. The vocabulary is
+yours; the library only carries it. A call with no refusal reasons writes `never`.
+
+```tsx
+type StockReason = 'etag-conflict' | 'out-of-stock';
+
+const editOrder = (signal: AbortSignal): Promise<ApiResponse<Order, StockReason>> =>
+    gateway.editOrder(orderId, signal);
+
+executeAction({
+    action: editOrder,
+    errorMessage: <span>Could not edit the order</span>,
+    failedHandler: response => {
+        switch (response.reason) {
+            case 'etag-conflict':
+                return showReloadPrompt();
+            case 'out-of-stock':
+                return showStockWarning();
+            case undefined:
+                return;
+            default: {
+                const unhandled: never = response.reason;
+                return unhandled;
+            }
+        }
+    },
+});
+```
+
+`response.reason` is typed as `StockReason | undefined`, so a misspelled case is a compile error. It
+is optional because a call can fail without one — the `undefined` case above. The `default` arm is
+what makes the switch exhaustive: assigning the reason to `never` compiles only while every member is
+handled, so adding one to `StockReason` breaks the build until it is dealt with. A switch without
+that arm still compiles when a member is missing.
 
 ## Development
 
@@ -36,8 +79,9 @@ npm run build:watch  # Watch mode
 
 ### Submitting Updates
 
-Make sure all commits include a [Semantic Release](https://github.com/semantic-release/semantic-release) compatible
-description like the following:
+Make sure all commits include a
+[Semantic Release](https://github.com/semantic-release/semantic-release) compatible description like
+the following:
 
 - Fix Release — `fix(pencil): stop graphite breaking when too much pressure applied`
 - Feature Release — `feat(pencil): add 'graphiteWidth' option`
