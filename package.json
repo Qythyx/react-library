@@ -81,7 +81,8 @@
 		"lint:fix": "eslint src --fix",
 		"test": "jest",
 		"test:coverage": "jest --coverage",
-		"test:watch": "jest --watch"
+		"test:watch": "jest --watch",
+		"typecheck": "tsc --noEmit"
 	},
 	"type": "module",
 	"version": "3.0.0"
