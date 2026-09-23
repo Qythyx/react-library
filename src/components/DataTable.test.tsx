@@ -83,6 +83,24 @@ describe('DataTable', () => {
 		});
 	});
 
+	it('marks highlighted rows as selected', async () => {
+		render(
+			<DataTable<TestRow>
+				columns={mockColumns}
+				data={mockData}
+				highlightedRows={[1]}
+				i18n={i18n}
+				onLoad={onLoad}
+				totalCount={3}
+			/>,
+		);
+
+		await waitFor(() => {
+			expect(screen.getByText('Jane Smith')).toBeInTheDocument();
+		});
+		expect(screen.getByRole('row', { selected: true })).toHaveTextContent('Jane Smith');
+	});
+
 	it('should show empty message when no data', async () => {
 		render(<DataTable<TestRow> columns={mockColumns} data={[]} i18n={i18n} onLoad={onLoad} totalCount={0} />);
 

@@ -33,6 +33,7 @@ export interface DataTableProps<T> {
 	fullWidth?: boolean;
 	groups?: Group[];
 	header?: React.ReactElement;
+	highlightedRows?: readonly number[];
 	i18n?: i18n;
 	initialPageSize?: number;
 	isLoading?: boolean;
@@ -101,6 +102,7 @@ const DataTableComponent = <T extends object>({
 	fullWidth = true,
 	groups,
 	header,
+	highlightedRows,
 	i18n,
 	initialPageSize = 20,
 	isLoading = false,
@@ -290,9 +292,11 @@ const DataTableComponent = <T extends object>({
 						}
 						return (
 							<TableRow
+								aria-selected={highlightedRows?.includes(rowIndex) ? true : undefined}
 								hover
 								key={`row-${rowIndex}`}
 								onClick={onRowClick ? (): void => onRowClick(rowIndex) : undefined}
+								selected={highlightedRows?.includes(rowIndex) ?? false}
 								sx={{
 									cursor: onRowClick ? 'pointer' : 'default',
 								}}
@@ -314,7 +318,7 @@ const DataTableComponent = <T extends object>({
 					})}
 				</React.Fragment>
 			)),
-		[columns, data, groups, onRowClick],
+		[columns, data, groups, highlightedRows, onRowClick],
 	);
 
 	const renderEmptyTable = useMemo(
@@ -334,9 +338,11 @@ const DataTableComponent = <T extends object>({
 		() =>
 			data.map((row, rowIndex) => (
 				<TableRow
+					aria-selected={highlightedRows?.includes(rowIndex) ? true : undefined}
 					hover
 					key={`row-${rowIndex}`}
 					onClick={onRowClick ? (): void => onRowClick(rowIndex) : undefined}
+					selected={highlightedRows?.includes(rowIndex) ?? false}
 					sx={{
 						cursor: onRowClick ? 'pointer' : 'default',
 					}}
@@ -355,7 +361,7 @@ const DataTableComponent = <T extends object>({
 					))}
 				</TableRow>
 			)),
-		[columns, data, onRowClick],
+		[columns, data, highlightedRows, onRowClick],
 	);
 
 	// Memoize table body rendering
