@@ -32,7 +32,11 @@ A reusable React component and hooks library built with TypeScript, Material-UI,
 `DataTable` takes your records as `rows` and asks each column how to render its cell. It identifies
 each row by the key `getRowKey` returns, and uses that key for the row's React key and for
 `highlightedRowKeys`. `onRowClick` receives the row itself. Sorting and paging stay with you: the
-table reports them to `onLoad`, and you pass back the page of rows to show.
+table reports them to `onLoad`, and you pass back the page of rows to show. When `totalCount`
+shrinks and leaves the current page past the end, the table moves to the page the user typed if it
+exists, otherwise to the last page, and reports that to `onLoad`, so you don't need to clamp the
+page yourself. It waits while `isLoading` is true, so keep `isLoading` true until `totalCount`
+describes the rows being loaded.
 
 ```tsx
 type OfferSortKey = 'Begins' | 'ProductName';
@@ -56,6 +60,7 @@ const columns: Column<Offer, OfferSortKey>[] = [
     columns={columns}
     getRowKey={offer => offer.ID}
     highlightedRowKeys={selectedOfferID === null ? [] : [selectedOfferID]}
+    isLoading={isLoading}
     onLoad={loadOffers}
     onRowClick={openOffer}
     persistenceKey="offers"
@@ -86,6 +91,7 @@ To show the rows in groups, pass `groups` instead of `rows`. Each group carries 
         key: supplier.ID,
         rows: offersBySupplier.get(supplier.ID) ?? [],
     }))}
+    isLoading={isLoading}
     onLoad={loadOffers}
     persistenceKey="offers-by-supplier"
     totalCount={total}

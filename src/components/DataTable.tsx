@@ -16,7 +16,7 @@ import {
 } from '@mui/material';
 import { i18n, TFunction } from 'i18next';
 import { KeyboardArrowDown, KeyboardArrowUp, NavigateBefore, NavigateNext } from '@mui/icons-material';
-import React, { useCallback, useEffect, useMemo } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { loadTranslations } from '../utils/loadTranslations.js';
 import { NumberField } from './NumberField.js';
@@ -62,7 +62,10 @@ export interface Group<T> {
 
 /** The page of rows to load and their order. */
 export interface LoadParams<TSortKey extends string> {
-	/** The page to show, starting at 1. */
+	/**
+	 * The page to show, from 1 to the last page; 1 when there are no rows or every row is shown. It can be
+	 * past the last page while `isLoading` is true.
+	 */
 	currentPage: number;
 	/** The number of rows on a page. */
 	pageSize: number;
@@ -116,7 +119,8 @@ interface BaseDataTableProps<T, TSortKey extends string> {
 	initialPageSize?: number;
 	/**
 	 * Whether rows are being loaded. It disables the previous and next page buttons and, after
-	 * `loadingIndicatorDelay`, covers the table with a loading indicator.
+	 * `loadingIndicatorDelay`, covers the table with a loading indicator. While it is true the table does not
+	 * move the page to fit `totalCount`, so keep it true until `totalCount` describes the rows being loaded.
 	 */
 	isLoading?: boolean;
 	/**
@@ -143,7 +147,11 @@ interface BaseDataTableProps<T, TSortKey extends string> {
 	 * footer in view. The parent must have a bounded height.
 	 */
 	scrollInternally?: boolean;
-	/** The number of rows across every page. */
+	/**
+	 * The number of rows across every page. When it leaves the current page past the last page, the table
+	 * moves to the page the user typed if it exists, otherwise to the last page, and calls `onLoad` with it,
+	 * once `isLoading` is false.
+	 */
 	totalCount: number;
 }
 
@@ -165,6 +173,8 @@ interface SortableColumn<T, TSortKey extends string> extends BaseColumn<T> {
 	 */
 	key: TSortKey;
 }
+
+const inputDebounceDelay = 400;
 
 const untranslated = ((key: string): string => key) as TFunction;
 
@@ -247,70 +257,82 @@ const DataTableComponent = <T extends object, TSortKey extends string = StringKe
 	const sortBy = sortableKeys.find(key => key === sortSettings.sortBy) ?? sortableKeys[0];
 	const sortAscending = sortBy === sortSettings.sortBy ? sortSettings.sortAscending : true;
 
-	const [debouncedCurrentPage, setCurrentPage, currentPage] = useDebouncedState(1);
-	const [debouncedPageSize, setPageSize, pageSize] = useDebouncedState(paginationSettings.pageSize);
+	const [currentPage, setCurrentPage] = useState(1);
+	const [requestedPage, setRequestedPage] = useState(1);
+	const [debouncedRequestedPageSize, setRequestedPageSize, requestedPageSize] = useDebouncedState(
+		paginationSettings.pageSize,
+		inputDebounceDelay,
+	);
 	const showLoadingIndicator = useDebouncedValue(isLoading, loadingIndicatorDelay);
 
-	const totalPages = useMemo(
-		() => (paginationSettings.showAll ? 1 : Math.max(1, Math.ceil(totalCount / paginationSettings.pageSize))),
-		[paginationSettings.showAll, totalCount, paginationSettings.pageSize],
-	);
+	const totalPages = paginationSettings.showAll
+		? 1
+		: Math.max(1, Math.ceil(totalCount / paginationSettings.pageSize));
 
-	useEffect(() => setPageSize(paginationSettings.pageSize), [paginationSettings.pageSize]);
+	const goToPage = useCallback((page: number): void => {
+		setCurrentPage(page);
+		setRequestedPage(page);
+	}, []);
+
+	// Clamped while rendering, not in an effect: an effect runs after a commit that still holds the old page,
+	// so an onLoad passed in that same render would load the page past the end. Not while loading, when
+	// totalCount may not describe the rows yet.
+	if (!isLoading) {
+		if (currentPage > totalPages) {
+			// Takes a typed page that is still in range now, so its pending debounce timer loads nothing more.
+			setCurrentPage(Math.min(requestedPage, totalPages));
+		}
+		if (requestedPage > totalPages) {
+			setRequestedPage(totalPages);
+		}
+	}
+
+	useEffect(() => {
+		const timer = setTimeout(() => setCurrentPage(requestedPage), inputDebounceDelay);
+		return (): void => clearTimeout(timer);
+	}, [requestedPage]);
 	useEffect(
 		() =>
 			onLoad({
-				currentPage: debouncedCurrentPage,
+				currentPage,
 				pageSize: paginationSettings.pageSize,
 				showAll: paginationSettings.showAll,
 				sortAscending,
 				sortBy,
 			}),
-		[debouncedCurrentPage, paginationSettings.pageSize, paginationSettings.showAll, sortBy, sortAscending, onLoad],
+		[currentPage, paginationSettings.pageSize, paginationSettings.showAll, sortBy, sortAscending, onLoad],
 	);
 
 	const handleSortColumn = useCallback(
 		(column: TSortKey): void => {
 			setSortSettings({ sortAscending: column === sortBy ? !sortAscending : true, sortBy: column });
-			setCurrentPage(1);
+			goToPage(1);
 		},
-		[sortBy, sortAscending, setSortSettings, setCurrentPage],
+		[sortBy, sortAscending, setSortSettings, goToPage],
 	);
 
 	const handlePageSizeChange = useCallback(
 		(size: number): void => {
-			setCurrentPage(1);
+			goToPage(1);
 			setPaginationSettings(prev => ({ ...prev, pageSize: size }));
 		},
-		[setPaginationSettings, setCurrentPage],
+		[setPaginationSettings, goToPage],
 	);
 
 	const handleShowAllChange = useCallback(
 		(newShowAll: boolean): void => {
-			setCurrentPage(1);
+			goToPage(1);
 			setPaginationSettings(prev => ({ ...prev, showAll: newShowAll }));
 		},
-		[setPaginationSettings, setCurrentPage],
+		[setPaginationSettings, goToPage],
 	);
 
 	useEffect(() => {
-		const size = debouncedPageSize;
+		const size = debouncedRequestedPageSize;
 		if (!isNaN(size) && size >= 1) {
 			handlePageSizeChange(size);
 		}
-	}, [debouncedPageSize, handlePageSizeChange]);
-
-	const handleNextPage = useCallback((): void => {
-		if (currentPage < totalPages && !isLoading) {
-			setCurrentPage(currentPage + 1, true);
-		}
-	}, [currentPage, totalPages, isLoading, setCurrentPage]);
-
-	const handlePreviousPage = useCallback((): void => {
-		if (currentPage > 1) {
-			setCurrentPage(currentPage - 1, true);
-		}
-	}, [currentPage, setCurrentPage]);
+	}, [debouncedRequestedPageSize, handlePageSizeChange]);
 
 	const getSortIcon = useCallback(
 		(column: Column<T, TSortKey>): null | React.ReactElement => {
@@ -481,14 +503,14 @@ const DataTableComponent = <T extends object, TSortKey extends string = StringKe
 							<>
 								<IconButton
 									aria-label={t('dataTable.list.previous')}
-									disabled={isLoading || currentPage <= 1}
-									onClick={handlePreviousPage}
+									disabled={isLoading || requestedPage <= 1}
+									onClick={(): void => goToPage(requestedPage - 1)}
 									size="small"
 								>
 									<NavigateBefore />
 								</IconButton>
 								<NumberField
-									onChange={e => setCurrentPage(Math.max(1, Math.min(totalPages, e)))}
+									onChange={page => setRequestedPage(Math.max(1, page))}
 									size="small"
 									slotProps={{
 										htmlInput: { pattern: '[0-9]*' },
@@ -501,15 +523,15 @@ const DataTableComponent = <T extends object, TSortKey extends string = StringKe
 										},
 									}}
 									sx={{ width: '5em' }}
-									value={currentPage}
+									value={requestedPage}
 								/>
 								<Typography color="text.secondary" variant="body2">
 									/ {totalPages}
 								</Typography>
 								<IconButton
 									aria-label={t('dataTable.list.next')}
-									disabled={isLoading || currentPage >= totalPages}
-									onClick={handleNextPage}
+									disabled={isLoading || requestedPage >= totalPages}
+									onClick={(): void => goToPage(requestedPage + 1)}
 									size="small"
 								>
 									<NavigateNext />
@@ -525,7 +547,7 @@ const DataTableComponent = <T extends object, TSortKey extends string = StringKe
 									{t('dataTable.list.itemsPerPage')}
 								</Typography>
 								<NumberField
-									onChange={e => setPageSize(e)}
+									onChange={setRequestedPageSize}
 									size="small"
 									slotProps={{
 										input: {
@@ -536,7 +558,7 @@ const DataTableComponent = <T extends object, TSortKey extends string = StringKe
 										},
 									}}
 									sx={{ width: '5em' }}
-									value={pageSize}
+									value={requestedPageSize}
 								/>
 							</Stack>
 						)}

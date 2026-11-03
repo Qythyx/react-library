@@ -1,8 +1,10 @@
-import { userEvent } from '@testing-library/user-event';
+import type { ReactElement } from 'react';
 
+import { type UserEvent, userEvent } from '@testing-library/user-event';
+
+import { act, render, screen, waitFor, within } from '../test-utils/testUtils.js';
 import { Column, DataTable, Group } from './DataTable.js';
 import { createMockI18n } from '../test-utils/i18nMock.js';
-import { render, screen, waitFor, within } from '../test-utils/testUtils.js';
 
 interface TestRow {
 	age: number;
@@ -508,6 +510,276 @@ describe('DataTable', () => {
 						currentPage: 1,
 					}),
 				);
+			});
+		});
+
+		describe('when the page changes', () => {
+			beforeEach(() => {
+				jest.useFakeTimers();
+			});
+
+			afterEach(() => {
+				jest.useRealTimers();
+			});
+
+			// Fires the pending timers one at a time, rendering after each, so timers that fire at different
+			// moments in a browser are not batched into one render here.
+			const settle = (): void => {
+				while (jest.getTimerCount() > 0) {
+					act(() => {
+						jest.advanceTimersToNextTimer();
+					});
+				}
+			};
+
+			const pagedTable = (
+				totalCount: number,
+				{ isLoading = false, load = onLoad }: { isLoading?: boolean; load?: jest.Mock } = {},
+			): ReactElement => (
+				<DataTable<TestRow>
+					columns={mockColumns}
+					getRowKey={getRowKey}
+					i18n={i18n}
+					isLoading={isLoading}
+					onLoad={load}
+					persistenceKey="test"
+					rows={manyRows}
+					totalCount={totalCount}
+				/>
+			);
+
+			const clickNextUntil = async (user: UserEvent, page: number): Promise<void> => {
+				for (let i = 1; i < page; i++) {
+					await user.click(screen.getByLabelText('Next'));
+				}
+				settle();
+				expect(onLoad).toHaveBeenLastCalledWith(expect.objectContaining({ currentPage: page }));
+			};
+
+			it('should move to the last page and load it once when the rows shrink', async () => {
+				const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+				const { rerender } = render(pagedTable(100));
+				await clickNextUntil(user, 5);
+				onLoad.mockClear();
+
+				rerender(pagedTable(30));
+
+				expect(onLoad).toHaveBeenCalledTimes(1);
+				expect(onLoad).toHaveBeenCalledWith(expect.objectContaining({ currentPage: 2 }));
+				expect(screen.getByLabelText('Go to page')).toHaveValue('2');
+				expect(screen.getByText('/ 2')).toBeInTheDocument();
+				settle();
+				expect(onLoad).toHaveBeenCalledTimes(1);
+			});
+
+			it('should load only the last page when a new onLoad comes with the shrunk rows', async () => {
+				const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+				const { rerender } = render(pagedTable(100));
+				await clickNextUntil(user, 5);
+				const nextLoad = jest.fn();
+
+				rerender(pagedTable(30, { load: nextLoad }));
+				settle();
+
+				expect(nextLoad).toHaveBeenCalledTimes(1);
+				expect(nextLoad).toHaveBeenCalledWith(expect.objectContaining({ currentPage: 2 }));
+			});
+
+			it('should move to page 1 and load it once when there are no rows', async () => {
+				const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+				const { rerender } = render(pagedTable(100));
+				await clickNextUntil(user, 3);
+				onLoad.mockClear();
+
+				rerender(pagedTable(0));
+				settle();
+
+				expect(onLoad).toHaveBeenCalledTimes(1);
+				expect(onLoad).toHaveBeenCalledWith(expect.objectContaining({ currentPage: 1 }));
+				expect(screen.getByLabelText('Go to page')).toHaveValue('1');
+			});
+
+			it('should not reload when the page is still the last one after the rows shrink', async () => {
+				const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+				const { rerender } = render(pagedTable(100));
+				await clickNextUntil(user, 3);
+				onLoad.mockClear();
+
+				rerender(pagedTable(41));
+				settle();
+
+				expect(onLoad).not.toHaveBeenCalled();
+			});
+
+			it('should keep the page while loading, when the row count is not known yet', async () => {
+				const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+				const { rerender } = render(pagedTable(100));
+				await clickNextUntil(user, 2);
+				onLoad.mockClear();
+
+				rerender(pagedTable(0, { isLoading: true }));
+				settle();
+				rerender(pagedTable(100));
+				settle();
+
+				expect(onLoad).not.toHaveBeenCalled();
+				expect(screen.getByLabelText('Go to page')).toHaveValue('2');
+			});
+
+			it('should lower a typed page that the shrunk rows leave past the end', async () => {
+				const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+				const { rerender } = render(pagedTable(100));
+				settle();
+				onLoad.mockClear();
+				await user.clear(screen.getByLabelText('Go to page'));
+				await user.type(screen.getByLabelText('Go to page'), '5');
+
+				rerender(pagedTable(30));
+
+				expect(screen.getByLabelText('Go to page')).toHaveValue('2');
+				settle();
+				expect(onLoad).toHaveBeenCalledTimes(1);
+				expect(onLoad).toHaveBeenCalledWith(expect.objectContaining({ currentPage: 2 }));
+			});
+
+			it('should load a typed page that matches the page before a sort', async () => {
+				const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+				render(pagedTable(100));
+				await clickNextUntil(user, 3);
+				await user.click(screen.getByText('Age'));
+				await user.clear(screen.getByLabelText('Go to page'));
+				await user.type(screen.getByLabelText('Go to page'), '3');
+				settle();
+
+				expect(screen.getByLabelText('Go to page')).toHaveValue('3');
+				expect(onLoad).toHaveBeenLastCalledWith(expect.objectContaining({ currentPage: 3, sortBy: 'age' }));
+			});
+
+			it('should load page 1 when the page field is cleared right after Next', async () => {
+				const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+				render(pagedTable(100));
+				settle();
+				await user.click(screen.getByLabelText('Next'));
+				await user.clear(screen.getByLabelText('Go to page'));
+				settle();
+
+				expect(screen.getByLabelText('Go to page')).toHaveValue('1');
+				expect(onLoad).toHaveBeenLastCalledWith(expect.objectContaining({ currentPage: 1 }));
+			});
+
+			it('should load only the typed page when the rows shrink before it is loaded', async () => {
+				const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+				const { rerender } = render(pagedTable(100));
+				await clickNextUntil(user, 5);
+				onLoad.mockClear();
+				await user.type(screen.getByLabelText('Go to page'), '1', {
+					initialSelectionEnd: 1,
+					initialSelectionStart: 0,
+				});
+
+				rerender(pagedTable(30));
+				settle();
+
+				expect(onLoad).toHaveBeenCalledTimes(1);
+				expect(onLoad).toHaveBeenCalledWith(expect.objectContaining({ currentPage: 1 }));
+			});
+
+			it('should not cap a page typed while loading by the row count from before', async () => {
+				const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+				const { rerender } = render(pagedTable(0, { isLoading: true }));
+				await user.clear(screen.getByLabelText('Go to page'));
+				await user.type(screen.getByLabelText('Go to page'), '3');
+
+				rerender(pagedTable(100));
+				settle();
+
+				expect(screen.getByLabelText('Go to page')).toHaveValue('3');
+				expect(onLoad).toHaveBeenLastCalledWith(expect.objectContaining({ currentPage: 3 }));
+			});
+
+			it('should step from a typed page that is not loaded yet', async () => {
+				const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+				render(pagedTable(100));
+				settle();
+				await user.clear(screen.getByLabelText('Go to page'));
+				await user.type(screen.getByLabelText('Go to page'), '3');
+
+				await user.click(screen.getByLabelText('Next'));
+				settle();
+
+				expect(onLoad).toHaveBeenLastCalledWith(expect.objectContaining({ currentPage: 4 }));
+			});
+
+			it('should step back from a typed page that is not loaded yet', async () => {
+				const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+				render(pagedTable(100));
+				settle();
+				await user.clear(screen.getByLabelText('Go to page'));
+				await user.type(screen.getByLabelText('Go to page'), '3');
+
+				await user.click(screen.getByLabelText('Previous'));
+				settle();
+
+				expect(onLoad).toHaveBeenLastCalledWith(expect.objectContaining({ currentPage: 2 }));
+			});
+
+			it('should load page 1 once when a larger page size leaves fewer pages', async () => {
+				const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+				render(pagedTable(100));
+				await clickNextUntil(user, 5);
+				onLoad.mockClear();
+
+				await user.clear(screen.getByLabelText('Items per page'));
+				await user.type(screen.getByLabelText('Items per page'), '50');
+				settle();
+
+				expect(onLoad).toHaveBeenCalledTimes(1);
+				expect(onLoad).toHaveBeenCalledWith(expect.objectContaining({ currentPage: 1, pageSize: 50 }));
+			});
+
+			it('should load page 1 once when every row is shown', async () => {
+				const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+				const { rerender } = render(pagedTable(100));
+				await clickNextUntil(user, 5);
+				// While loading the table doesn't fit the page to the rows, so only the show-all reset can reach page 1.
+				rerender(pagedTable(100, { isLoading: true }));
+				onLoad.mockClear();
+
+				await user.click(screen.getByRole('checkbox', { name: 'All' }));
+				settle();
+
+				expect(onLoad).toHaveBeenCalledTimes(1);
+				expect(onLoad).toHaveBeenCalledWith(expect.objectContaining({ currentPage: 1, showAll: true }));
+			});
+
+			it('should drop a typed page that is not loaded yet when the sort changes', async () => {
+				const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+				render(pagedTable(100));
+				settle();
+				await user.clear(screen.getByLabelText('Go to page'));
+				await user.type(screen.getByLabelText('Go to page'), '3');
+				act(() => {
+					jest.advanceTimersByTime(200);
+				});
+
+				await user.click(screen.getByText('Age'));
+				settle();
+
+				expect(onLoad).not.toHaveBeenCalledWith(expect.objectContaining({ currentPage: 3 }));
+				expect(onLoad).toHaveBeenLastCalledWith(expect.objectContaining({ currentPage: 1, sortBy: 'age' }));
+			});
+
+			it('should load page 1 once when the sort changes', async () => {
+				const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+				render(pagedTable(100));
+				await clickNextUntil(user, 2);
+				onLoad.mockClear();
+
+				await user.click(screen.getByText('Age'));
+				settle();
+
+				expect(onLoad).toHaveBeenCalledTimes(1);
+				expect(onLoad).toHaveBeenCalledWith(expect.objectContaining({ currentPage: 1, sortBy: 'age' }));
 			});
 		});
 
