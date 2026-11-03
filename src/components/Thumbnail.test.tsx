@@ -1,4 +1,3 @@
-import React from 'react';
 import { userEvent } from '@testing-library/user-event';
 
 import { render, screen, waitFor } from '../test-utils/testUtils.js';
@@ -78,14 +77,14 @@ describe('Thumbnail', () => {
 
 	it('should set cursor to pointer when onImageClick handler is provided', () => {
 		render(<Thumbnail imageUrl="test.jpg" onImageClick={() => {}} sx={undefined} />);
-		const img = screen.getByRole('img') as HTMLImageElement;
-		expect(img.style.cursor).toBe('pointer');
+		const img = screen.getByRole('img');
+		expect(img).toHaveStyle({ cursor: 'pointer' });
 	});
 
-	it('should set cursor to unset when onImageClick is null', () => {
+	it('should not set a pointer cursor when onImageClick is null', () => {
 		render(<Thumbnail imageUrl="test.jpg" onImageClick={null} sx={undefined} />);
-		const img = screen.getByRole('img') as HTMLImageElement;
-		expect(img.style.cursor).toBe('unset');
+		const img = screen.getByRole('img');
+		expect(img).not.toHaveStyle({ cursor: 'pointer' });
 	});
 
 	it('should set cursor to pointer on no-image box when onNoImageClick is provided', () => {

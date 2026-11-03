@@ -1,4 +1,3 @@
-import React from 'react';
 import { userEvent } from '@testing-library/user-event';
 
 import { NumberField } from './NumberField.js';
@@ -7,14 +6,14 @@ import { render, screen } from '../test-utils/testUtils.js';
 describe('NumberField', () => {
 	it('should render with initial value', () => {
 		render(<NumberField onChange={() => {}} value={42} />);
-		const input = screen.getByRole('textbox') as HTMLInputElement;
-		expect(input.value).toBe('42');
+		const input = screen.getByRole('textbox');
+		expect(input).toHaveValue('42');
 	});
 
 	it('should render with empty value', () => {
 		render(<NumberField onChange={() => {}} value="" />);
-		const input = screen.getByRole('textbox') as HTMLInputElement;
-		expect(input.value).toBe('');
+		const input = screen.getByRole('textbox');
+		expect(input).toHaveValue('');
 	});
 
 	it('should handle integer-only input when decimalPlaces is 0', async () => {
@@ -41,10 +40,10 @@ describe('NumberField', () => {
 		const onChange = jest.fn();
 		const user = userEvent.setup();
 		render(<NumberField decimalPlaces={2} onChange={onChange} value="" />);
-		const input = screen.getByRole('textbox') as HTMLInputElement;
+		const input = screen.getByRole('textbox');
 
 		await user.type(input, '12.');
-		expect(input.value).toBe('12.');
+		expect(input).toHaveValue('12.');
 		// onChange should not be called for trailing decimal
 		expect(onChange).toHaveBeenLastCalledWith(12);
 	});
@@ -53,10 +52,10 @@ describe('NumberField', () => {
 		const onChange = jest.fn();
 		const user = userEvent.setup();
 		render(<NumberField onChange={onChange} value={5} />);
-		const input = screen.getByRole('textbox') as HTMLInputElement;
+		const input = screen.getByRole('textbox');
 
 		await user.type(input, 'abc');
-		expect(input.value).toBe('5');
+		expect(input).toHaveValue('5');
 		expect(onChange).not.toHaveBeenCalledWith(expect.stringContaining('abc'));
 	});
 
@@ -72,22 +71,22 @@ describe('NumberField', () => {
 
 	it('should sync display value when external value changes', () => {
 		const { rerender } = render(<NumberField onChange={() => {}} value={10} />);
-		const input = screen.getByRole('textbox') as HTMLInputElement;
-		expect(input.value).toBe('10');
+		const input = screen.getByRole('textbox');
+		expect(input).toHaveValue('10');
 
 		rerender(<NumberField onChange={() => {}} value={20} />);
-		expect(input.value).toBe('20');
+		expect(input).toHaveValue('20');
 	});
 
 	it('should respect decimal places limit', async () => {
 		const onChange = jest.fn();
 		const user = userEvent.setup();
 		render(<NumberField decimalPlaces={2} onChange={onChange} value="" />);
-		const input = screen.getByRole('textbox') as HTMLInputElement;
+		const input = screen.getByRole('textbox');
 
 		await user.type(input, '12.345');
 		// Should only accept up to 2 decimal places
-		expect(input.value).toBe('12.34');
+		expect(input).toHaveValue('12.34');
 		expect(onChange).toHaveBeenLastCalledWith(12.34);
 	});
 
@@ -116,8 +115,8 @@ describe('NumberField', () => {
 
 	it('should handle zero as initial value', () => {
 		render(<NumberField onChange={() => {}} value={0} />);
-		const input = screen.getByRole('textbox') as HTMLInputElement;
-		expect(input.value).toBe('0');
+		const input = screen.getByRole('textbox');
+		expect(input).toHaveValue('0');
 	});
 
 	it('should handle decimal input with leading zero', async () => {
@@ -134,10 +133,10 @@ describe('NumberField', () => {
 		const onChange = jest.fn();
 		const user = userEvent.setup();
 		render(<NumberField decimalPlaces={1} onChange={onChange} value={1.2} />);
-		const input = screen.getByRole('textbox') as HTMLInputElement;
+		const input = screen.getByRole('textbox');
 
 		await user.type(input, '5');
 		// Should not accept additional decimal places beyond the limit
-		expect(input.value).toBe('1.2');
+		expect(input).toHaveValue('1.2');
 	});
 });

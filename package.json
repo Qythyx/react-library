@@ -82,7 +82,7 @@
 		"test": "jest",
 		"test:coverage": "jest --coverage",
 		"test:watch": "jest --watch",
-		"typecheck": "tsc --noEmit"
+		"typecheck": "tsc --noEmit && tsc -p tsconfig.dev.json"
 	},
 	"type": "module",
 	"version": "4.1.0"

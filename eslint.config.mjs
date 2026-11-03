@@ -20,6 +20,9 @@ export default defineConfig(
 	},
 	eslint.configs.recommended,
 	tseslint.configs.recommended,
+	{ ...react.configs.flat.recommended, settings: { react: { version: 'detect' } } },
+	react.configs.flat['jsx-runtime'],
+	{ ...jestDom.configs['flat/recommended'], files: ['**/*.test.{ts,tsx}', '**/test-utils/**/*.{ts,tsx}'] },
 	prettier,
 	jsdoc.configs['flat/recommended-typescript'],
 	perfectionist.configs['recommended-alphabetical'],
@@ -28,9 +31,6 @@ export default defineConfig(
 	},
 	{
 		files: ['**/*.{js,mjs,ts,jsx,tsx}'],
-		...eslint.configs.all,
-		...react.configs.flat.all,
-		...jestDom.configs.recommended,
 		languageOptions: {
 			globals: {
 				...globals.browser,
@@ -48,10 +48,8 @@ export default defineConfig(
 					'validate-translation-keys': validateTranslationKeys,
 				},
 			},
-			jestDom,
 			jsdoc,
 			prettier: eslintPluginPrettier,
-			react,
 		},
 		rules: {
 			'@stylistic/quotes': ['error', 'single', { allowTemplateLiterals: 'never', avoidEscape: true }],

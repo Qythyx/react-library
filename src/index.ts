@@ -1,6 +1,6 @@
 // Components
 export { DataTable } from './components/DataTable.tsx';
-export type { Column, DataTableProps, Group, LoadParams, SortableFields } from './components/DataTable.tsx';
+export type { Column, DataTableProps, Group, LoadParams, StringKeyOf } from './components/DataTable.tsx';
 
 export { DateField } from './components/DateField.tsx';
 export { ImageModal } from './components/ImageModal.tsx';

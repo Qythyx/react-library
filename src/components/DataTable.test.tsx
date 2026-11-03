@@ -1,9 +1,8 @@
-import React from 'react';
 import { userEvent } from '@testing-library/user-event';
 
 import { Column, DataTable, Group } from './DataTable.js';
 import { createMockI18n } from '../test-utils/i18nMock.js';
-import { render, screen, waitFor } from '../test-utils/testUtils.js';
+import { render, screen, waitFor, within } from '../test-utils/testUtils.js';
 
 interface TestRow {
 	age: number;
@@ -13,16 +12,19 @@ interface TestRow {
 
 describe('DataTable', () => {
 	const mockColumns: Column<TestRow>[] = [
-		{ isSortable: true, key: 'name', label: 'Name' },
-		{ isSortable: true, key: 'age', label: 'Age' },
+		{ isSortable: true, key: 'name', label: 'Name', render: row => row.name },
+		{ isSortable: true, key: 'age', label: 'Age', render: row => row.age },
 	];
-	const mockData = [
-		['John Doe', '30'],
-		['Jane Smith', '25'],
-		['Bob Johnson', '35'],
+	const mockRows: TestRow[] = [
+		{ age: 30, id: 1, name: 'John Doe' },
+		{ age: 25, id: 2, name: 'Jane Smith' },
+		{ age: 35, id: 3, name: 'Bob Johnson' },
 	];
+	const getRowKey = (row: TestRow): string => String(row.id);
 	const i18n = createMockI18n();
 	const onLoad = jest.fn();
+
+	const getBodyRows = (): HTMLElement[] => within(screen.getAllByRole('rowgroup')[1]!).getAllByRole('row');
 
 	beforeEach(() => {
 		localStorage.clear();
@@ -30,7 +32,17 @@ describe('DataTable', () => {
 	});
 
 	it('should render column headers with string labels', async () => {
-		render(<DataTable<TestRow> columns={mockColumns} data={mockData} i18n={i18n} onLoad={onLoad} totalCount={3} />);
+		render(
+			<DataTable<TestRow>
+				columns={mockColumns}
+				getRowKey={getRowKey}
+				i18n={i18n}
+				onLoad={onLoad}
+				persistenceKey="test"
+				rows={mockRows}
+				totalCount={3}
+			/>,
+		);
 
 		await waitFor(() => {
 			expect(screen.getByText('Name')).toBeInTheDocument();
@@ -39,15 +51,17 @@ describe('DataTable', () => {
 
 	it('should render column headers with element labels', async () => {
 		const columnsWithElements: Column<TestRow>[] = [
-			{ isSortable: true, key: 'name', label: <span>Name Element</span> },
-			{ isSortable: true, key: 'age', label: <strong>Age Element</strong> },
+			{ isSortable: true, key: 'name', label: <span>Name Element</span>, render: row => row.name },
+			{ isSortable: true, key: 'age', label: <strong>Age Element</strong>, render: row => row.age },
 		];
 		render(
 			<DataTable<TestRow>
 				columns={columnsWithElements}
-				data={mockData}
+				getRowKey={getRowKey}
 				i18n={i18n}
 				onLoad={onLoad}
+				persistenceKey="test"
+				rows={mockRows}
 				totalCount={3}
 			/>,
 		);
@@ -60,11 +74,19 @@ describe('DataTable', () => {
 
 	it('should render column headers with mixed string and element labels', async () => {
 		const mixedColumns: Column<TestRow>[] = [
-			{ isSortable: true, key: 'name', label: 'Name String' },
-			{ isSortable: true, key: 'age', label: <em>Age Element</em> },
+			{ isSortable: true, key: 'name', label: 'Name String', render: row => row.name },
+			{ isSortable: true, key: 'age', label: <em>Age Element</em>, render: row => row.age },
 		];
 		render(
-			<DataTable<TestRow> columns={mixedColumns} data={mockData} i18n={i18n} onLoad={onLoad} totalCount={3} />,
+			<DataTable<TestRow>
+				columns={mixedColumns}
+				getRowKey={getRowKey}
+				i18n={i18n}
+				onLoad={onLoad}
+				persistenceKey="test"
+				rows={mockRows}
+				totalCount={3}
+			/>,
 		);
 
 		await waitFor(() => {
@@ -73,24 +95,88 @@ describe('DataTable', () => {
 		});
 	});
 
-	it('should render row data', async () => {
-		render(<DataTable<TestRow> columns={mockColumns} data={mockData} i18n={i18n} onLoad={onLoad} totalCount={3} />);
+	it("should render each cell with its column's render function", async () => {
+		const columns: Column<TestRow>[] = [
+			...mockColumns,
+			{
+				isSortable: false,
+				key: 'summary',
+				label: 'Summary',
+				render: row => <b>{`${row.name} is ${row.age}`}</b>,
+			},
+		];
+		render(
+			<DataTable<TestRow>
+				columns={columns}
+				getRowKey={getRowKey}
+				i18n={i18n}
+				onLoad={onLoad}
+				persistenceKey="test"
+				rows={mockRows}
+				totalCount={3}
+			/>,
+		);
 
 		await waitFor(() => {
-			expect(screen.getByText('John Doe')).toBeInTheDocument();
-			expect(screen.getByText('Jane Smith')).toBeInTheDocument();
-			expect(screen.getByText('Bob Johnson')).toBeInTheDocument();
+			expect(getBodyRows()).toHaveLength(3);
 		});
+		expect(
+			within(getBodyRows()[1]!)
+				.getAllByRole('cell')
+				.map(cell => cell.textContent),
+		).toEqual(['Jane Smith', '25', 'Jane Smith is 25']);
 	});
 
-	it('marks highlighted rows as selected', async () => {
+	it("should keep a cell's state with its row when the rows are reordered", async () => {
+		const user = userEvent.setup();
+		const columns: Column<TestRow>[] = [
+			...mockColumns,
+			{
+				isSortable: false,
+				key: 'note',
+				label: 'Note',
+				render: row => <input aria-label={`Note for ${row.name}`} />,
+			},
+		];
+		const { rerender } = render(
+			<DataTable<TestRow>
+				columns={columns}
+				getRowKey={getRowKey}
+				i18n={i18n}
+				onLoad={onLoad}
+				persistenceKey="test"
+				rows={mockRows}
+				totalCount={3}
+			/>,
+		);
+		await user.type(screen.getByLabelText('Note for John Doe'), 'first');
+
+		rerender(
+			<DataTable<TestRow>
+				columns={columns}
+				getRowKey={getRowKey}
+				i18n={i18n}
+				onLoad={onLoad}
+				persistenceKey="test"
+				rows={[...mockRows].reverse()}
+				totalCount={3}
+			/>,
+		);
+
+		expect(screen.getByLabelText('Note for John Doe')).toHaveValue('first');
+		expect(screen.getByLabelText('Note for Bob Johnson')).toHaveValue('');
+	});
+
+	it('should mark the rows with highlighted keys as selected', async () => {
 		render(
 			<DataTable<TestRow>
 				columns={mockColumns}
-				data={mockData}
-				highlightedRows={[1]}
+				getRowKey={getRowKey}
+				highlightedRowKeys={['2']}
 				i18n={i18n}
 				onLoad={onLoad}
+				persistenceKey="test"
+				rows={mockRows}
 				totalCount={3}
 			/>,
 		);
@@ -102,7 +188,17 @@ describe('DataTable', () => {
 	});
 
 	it('should show empty message when no data', async () => {
-		render(<DataTable<TestRow> columns={mockColumns} data={[]} i18n={i18n} onLoad={onLoad} totalCount={0} />);
+		render(
+			<DataTable<TestRow>
+				columns={mockColumns}
+				getRowKey={getRowKey}
+				i18n={i18n}
+				onLoad={onLoad}
+				persistenceKey="test"
+				rows={[]}
+				totalCount={0}
+			/>,
+		);
 
 		await waitFor(() => {
 			expect(screen.getByText('No data found.')).toBeInTheDocument();
@@ -113,10 +209,12 @@ describe('DataTable', () => {
 		render(
 			<DataTable<TestRow>
 				columns={mockColumns}
-				data={[]}
 				emptyMessage="Custom empty message"
+				getRowKey={getRowKey}
 				i18n={i18n}
 				onLoad={onLoad}
+				persistenceKey="test"
+				rows={[]}
 				totalCount={0}
 			/>,
 		);
@@ -127,7 +225,17 @@ describe('DataTable', () => {
 	});
 
 	it('should call onLoad on mount', async () => {
-		render(<DataTable<TestRow> columns={mockColumns} data={mockData} i18n={i18n} onLoad={onLoad} totalCount={3} />);
+		render(
+			<DataTable<TestRow>
+				columns={mockColumns}
+				getRowKey={getRowKey}
+				i18n={i18n}
+				onLoad={onLoad}
+				persistenceKey="test"
+				rows={mockRows}
+				totalCount={3}
+			/>,
+		);
 
 		await waitFor(() => {
 			expect(onLoad).toHaveBeenCalled();
@@ -138,22 +246,22 @@ describe('DataTable', () => {
 		it('should sort ascending when clicking sortable column header', async () => {
 			const user = userEvent.setup();
 			render(
-				<DataTable<TestRow> columns={mockColumns} data={mockData} i18n={i18n} onLoad={onLoad} totalCount={3} />,
+				<DataTable<TestRow>
+					columns={mockColumns}
+					getRowKey={getRowKey}
+					i18n={i18n}
+					onLoad={onLoad}
+					persistenceKey="test"
+					rows={mockRows}
+					totalCount={3}
+				/>,
 			);
 
-			await waitFor(() => {
-				expect(screen.getByText('Name')).toBeInTheDocument();
-			});
-
-			const nameHeader = screen.getByText('Name');
-			await user.click(nameHeader);
+			await user.click(screen.getByText('Age'));
 
 			await waitFor(() => {
-				expect(onLoad).toHaveBeenCalledWith(
-					expect.objectContaining({
-						sortAscending: true,
-						sortBy: 'name',
-					}),
+				expect(onLoad).toHaveBeenLastCalledWith(
+					expect.objectContaining({ sortAscending: true, sortBy: 'age' }),
 				);
 			});
 		});
@@ -161,33 +269,29 @@ describe('DataTable', () => {
 		it('should toggle sort direction when clicking same column twice', async () => {
 			const user = userEvent.setup();
 			render(
-				<DataTable<TestRow> columns={mockColumns} data={mockData} i18n={i18n} onLoad={onLoad} totalCount={3} />,
+				<DataTable<TestRow>
+					columns={mockColumns}
+					getRowKey={getRowKey}
+					i18n={i18n}
+					onLoad={onLoad}
+					persistenceKey="test"
+					rows={mockRows}
+					totalCount={3}
+				/>,
 			);
-
-			await waitFor(() => {
-				expect(screen.getByText('Name')).toBeInTheDocument();
-			});
-
 			const nameHeader = screen.getByText('Name');
-			await user.click(nameHeader);
 
+			await user.click(nameHeader);
 			await waitFor(() => {
-				expect(onLoad).toHaveBeenCalledWith(
-					expect.objectContaining({
-						sortAscending: true,
-						sortBy: 'name',
-					}),
+				expect(onLoad).toHaveBeenLastCalledWith(
+					expect.objectContaining({ sortAscending: false, sortBy: 'name' }),
 				);
 			});
 
 			await user.click(nameHeader);
-
 			await waitFor(() => {
-				expect(onLoad).toHaveBeenCalledWith(
-					expect.objectContaining({
-						sortAscending: false,
-						sortBy: 'name',
-					}),
+				expect(onLoad).toHaveBeenLastCalledWith(
+					expect.objectContaining({ sortAscending: true, sortBy: 'name' }),
 				);
 			});
 		});
@@ -195,7 +299,15 @@ describe('DataTable', () => {
 		it('should change sort column when clicking different column', async () => {
 			const user = userEvent.setup();
 			render(
-				<DataTable<TestRow> columns={mockColumns} data={mockData} i18n={i18n} onLoad={onLoad} totalCount={3} />,
+				<DataTable<TestRow>
+					columns={mockColumns}
+					getRowKey={getRowKey}
+					i18n={i18n}
+					onLoad={onLoad}
+					persistenceKey="test"
+					rows={mockRows}
+					totalCount={3}
+				/>,
 			);
 
 			await waitFor(() => {
@@ -223,18 +335,125 @@ describe('DataTable', () => {
 				);
 			});
 		});
-	});
 
-	describe('Pagination', () => {
-		it('should navigate to next page', async () => {
-			const user = userEvent.setup();
-			const manyData = Array.from({ length: 15 }, (_, i) => [`Person ${i}`, `${20 + i}`]);
+		it('should sort by the first sortable column by default', async () => {
+			const columns: Column<TestRow>[] = [
+				{ isSortable: false, key: 'id', label: 'ID', render: row => row.id },
+				...mockColumns,
+			];
+			render(
+				<DataTable<TestRow>
+					columns={columns}
+					getRowKey={getRowKey}
+					i18n={i18n}
+					onLoad={onLoad}
+					persistenceKey="test"
+					rows={mockRows}
+					totalCount={3}
+				/>,
+			);
+
+			await waitFor(() => {
+				expect(onLoad).toHaveBeenCalledWith(expect.objectContaining({ sortBy: 'name' }));
+			});
+		});
+
+		it('should ignore a stored sort that no sortable column has', async () => {
+			localStorage.setItem('test-table-sort', JSON.stringify({ sortAscending: false, sortBy: 'removed' }));
 			render(
 				<DataTable<TestRow>
 					columns={mockColumns}
-					data={manyData}
+					getRowKey={getRowKey}
 					i18n={i18n}
 					onLoad={onLoad}
+					persistenceKey="test"
+					rows={mockRows}
+					totalCount={3}
+				/>,
+			);
+
+			await waitFor(() => {
+				expect(onLoad).toHaveBeenCalledWith(expect.objectContaining({ sortAscending: true, sortBy: 'name' }));
+			});
+		});
+
+		it('should restore a stored sort', async () => {
+			localStorage.setItem('test-table-sort', JSON.stringify({ sortAscending: false, sortBy: 'age' }));
+			render(
+				<DataTable<TestRow>
+					columns={mockColumns}
+					getRowKey={getRowKey}
+					i18n={i18n}
+					onLoad={onLoad}
+					persistenceKey="test"
+					rows={mockRows}
+					totalCount={3}
+				/>,
+			);
+
+			await waitFor(() => {
+				expect(onLoad).toHaveBeenCalledWith(expect.objectContaining({ sortAscending: false, sortBy: 'age' }));
+			});
+		});
+
+		it.each(['{Enter}', ' '])('should sort when %p is pressed on a sortable header', async key => {
+			const user = userEvent.setup();
+			render(
+				<DataTable<TestRow>
+					columns={mockColumns}
+					getRowKey={getRowKey}
+					i18n={i18n}
+					onLoad={onLoad}
+					persistenceKey="test"
+					rows={mockRows}
+					totalCount={3}
+				/>,
+			);
+
+			screen.getByText('Age').closest('th')!.focus();
+			await user.keyboard(key);
+
+			await waitFor(() => {
+				expect(onLoad).toHaveBeenCalledWith(expect.objectContaining({ sortAscending: true, sortBy: 'age' }));
+			});
+		});
+
+		it('should sort by nothing when no column is sortable', async () => {
+			const columns: Column<TestRow>[] = [
+				{ isSortable: false, key: 'name', label: 'Name', render: row => row.name },
+			];
+			render(
+				<DataTable<TestRow>
+					columns={columns}
+					getRowKey={getRowKey}
+					i18n={i18n}
+					onLoad={onLoad}
+					persistenceKey="test"
+					rows={mockRows}
+					totalCount={3}
+				/>,
+			);
+
+			await waitFor(() => {
+				expect(onLoad).toHaveBeenCalled();
+			});
+			expect(onLoad).toHaveBeenCalledWith(expect.objectContaining({ sortBy: undefined }));
+		});
+	});
+
+	describe('Pagination', () => {
+		const manyRows = Array.from({ length: 15 }, (_, i): TestRow => ({ age: 20 + i, id: i, name: `Person ${i}` }));
+
+		it('should navigate to next page', async () => {
+			const user = userEvent.setup();
+			render(
+				<DataTable<TestRow>
+					columns={mockColumns}
+					getRowKey={getRowKey}
+					i18n={i18n}
+					onLoad={onLoad}
+					persistenceKey="test"
+					rows={manyRows}
 					totalCount={150}
 				/>,
 			);
@@ -257,13 +476,14 @@ describe('DataTable', () => {
 
 		it('should navigate to previous page', async () => {
 			const user = userEvent.setup();
-			const manyData = Array.from({ length: 15 }, (_, i) => [`Person ${i}`, `${20 + i}`]);
 			render(
 				<DataTable<TestRow>
 					columns={mockColumns}
-					data={manyData}
+					getRowKey={getRowKey}
 					i18n={i18n}
 					onLoad={onLoad}
+					persistenceKey="test"
+					rows={manyRows}
 					totalCount={150}
 				/>,
 			);
@@ -292,12 +512,14 @@ describe('DataTable', () => {
 		});
 
 		it('should render page size selector', async () => {
-			const { container } = render(
+			render(
 				<DataTable<TestRow>
 					columns={mockColumns}
-					data={mockData}
+					getRowKey={getRowKey}
 					i18n={i18n}
 					onLoad={onLoad}
+					persistenceKey="test"
+					rows={mockRows}
 					totalCount={50}
 				/>,
 			);
@@ -306,88 +528,137 @@ describe('DataTable', () => {
 				expect(screen.getByText('Name')).toBeInTheDocument();
 			});
 
-			const select = container.querySelector('[role="button"]');
-			expect(select).toBeTruthy();
+			expect(screen.getByLabelText('Items per page')).toBeInTheDocument();
 		});
 	});
 
 	describe('Row interaction', () => {
-		it('should call onRowClick when row is clicked', async () => {
+		it('should call onRowClick with the clicked row', async () => {
 			const user = userEvent.setup();
 			const onRowClick = jest.fn();
 			render(
 				<DataTable<TestRow>
 					columns={mockColumns}
-					data={mockData}
+					getRowKey={getRowKey}
 					i18n={i18n}
 					onLoad={onLoad}
 					onRowClick={onRowClick}
+					persistenceKey="test"
+					rows={mockRows}
 					totalCount={3}
 				/>,
 			);
 
-			await waitFor(() => {
-				expect(screen.getByText('John Doe')).toBeInTheDocument();
-			});
+			await user.click(screen.getByText('Jane Smith'));
 
-			const firstRow = screen.getByText('John Doe').closest('tr');
-			if (firstRow) {
-				await user.click(firstRow);
-			}
+			expect(onRowClick).toHaveBeenCalledWith(mockRows[1]);
+		});
 
-			expect(onRowClick).toHaveBeenCalledWith(0);
+		it.each(['{Enter}', ' '])('should call onRowClick when %p is pressed on a row', async key => {
+			const user = userEvent.setup();
+			const onRowClick = jest.fn();
+			render(
+				<DataTable<TestRow>
+					columns={mockColumns}
+					getRowKey={getRowKey}
+					i18n={i18n}
+					onLoad={onLoad}
+					onRowClick={onRowClick}
+					persistenceKey="test"
+					rows={mockRows}
+					totalCount={3}
+				/>,
+			);
+
+			getBodyRows()[2]!.focus();
+			await user.keyboard(key);
+
+			expect(onRowClick).toHaveBeenCalledWith(mockRows[2]);
+		});
+
+		it('should leave keys pressed in a control inside a row to that control', async () => {
+			const user = userEvent.setup();
+			const onRowClick = jest.fn();
+			const columns: Column<TestRow>[] = [
+				...mockColumns,
+				{
+					isSortable: false,
+					key: 'note',
+					label: 'Note',
+					render: row => <input aria-label={`Note for ${row.name}`} />,
+				},
+			];
+			render(
+				<DataTable<TestRow>
+					columns={columns}
+					getRowKey={getRowKey}
+					i18n={i18n}
+					onLoad={onLoad}
+					onRowClick={onRowClick}
+					persistenceKey="test"
+					rows={mockRows}
+					totalCount={3}
+				/>,
+			);
+
+			screen.getByLabelText('Note for John Doe').focus();
+			await user.keyboard('a b{Enter}');
+
+			expect(screen.getByLabelText('Note for John Doe')).toHaveValue('a b');
+			expect(onRowClick).not.toHaveBeenCalled();
 		});
 	});
 
 	describe('Groups', () => {
-		it('should render grouped rows', async () => {
-			const groups: Group[] = [
-				{
-					header: <div>Group 1</div>,
-					key: 'group1',
-					rows: [0, 1],
-				},
-				{
-					header: <div>Group 2</div>,
-					key: 'group2',
-					rows: [2],
-				},
+		it("should show each group's rows under its header, in the group's order", async () => {
+			const [john, jane, bob] = mockRows;
+			const groups: Group<TestRow>[] = [
+				{ header: <div>Group 1</div>, key: 'group1', rows: [bob!, john!] },
+				{ header: <div>Group 2</div>, key: 'group2', rows: [jane!] },
 			];
 
 			render(
 				<DataTable<TestRow>
 					columns={mockColumns}
-					data={mockData}
+					getRowKey={getRowKey}
 					groups={groups}
 					i18n={i18n}
 					onLoad={onLoad}
+					persistenceKey="test"
 					totalCount={3}
 				/>,
 			);
 
 			await waitFor(() => {
 				expect(screen.getByText('Group 1')).toBeInTheDocument();
-				expect(screen.getByText('Group 2')).toBeInTheDocument();
 			});
+			expect(getBodyRows().map(row => row.textContent)).toEqual([
+				'Group 1',
+				'Bob Johnson35',
+				'John Doe30',
+				'Group 2',
+				'Jane Smith25',
+			]);
 		});
 
 		it('should render group actions', async () => {
-			const groups: Group[] = [
+			const groups: Group<TestRow>[] = [
 				{
 					actions: <button>Group Action</button>,
 					header: <div>Group 1</div>,
 					key: 'group1',
-					rows: [0],
+					rows: [mockRows[0]!],
 				},
 			];
 
 			render(
 				<DataTable<TestRow>
 					columns={mockColumns}
-					data={mockData}
+					getRowKey={getRowKey}
 					groups={groups}
 					i18n={i18n}
 					onLoad={onLoad}
+					persistenceKey="test"
 					totalCount={3}
 				/>,
 			);
@@ -396,6 +667,27 @@ describe('DataTable', () => {
 				expect(screen.getByText('Group Action')).toBeInTheDocument();
 			});
 		});
+
+		it('should show the empty message when every group is empty', async () => {
+			const groups: Group<TestRow>[] = [{ header: <div>Group 1</div>, key: 'group1', rows: [] }];
+
+			render(
+				<DataTable<TestRow>
+					columns={mockColumns}
+					getRowKey={getRowKey}
+					groups={groups}
+					i18n={i18n}
+					onLoad={onLoad}
+					persistenceKey="test"
+					totalCount={0}
+				/>,
+			);
+
+			await waitFor(() => {
+				expect(screen.getByText('No data found.')).toBeInTheDocument();
+			});
+			expect(screen.queryByText('Group 1')).not.toBeInTheDocument();
+		});
 	});
 
 	describe('Loading state', () => {
@@ -403,10 +695,12 @@ describe('DataTable', () => {
 			const { container } = render(
 				<DataTable<TestRow>
 					columns={mockColumns}
-					data={mockData}
+					getRowKey={getRowKey}
 					i18n={i18n}
 					isLoading={true}
 					onLoad={onLoad}
+					persistenceKey="test"
+					rows={mockRows}
 					totalCount={3}
 				/>,
 			);
@@ -418,35 +712,18 @@ describe('DataTable', () => {
 		});
 	});
 
-	describe('Persistence', () => {
-		it('should render with persistenceKey prop', async () => {
-			render(
-				<DataTable<TestRow>
-					columns={mockColumns}
-					data={mockData}
-					i18n={i18n}
-					onLoad={onLoad}
-					persistenceKey="test-table"
-					totalCount={50}
-				/>,
-			);
-
-			await waitFor(() => {
-				expect(screen.getByText('Name')).toBeInTheDocument();
-			});
-		});
-	});
-
 	describe('Header', () => {
 		it('should render header when provided', async () => {
 			const header = <div>Custom Header Content</div>;
 			render(
 				<DataTable<TestRow>
 					columns={mockColumns}
-					data={mockData}
+					getRowKey={getRowKey}
 					header={header}
 					i18n={i18n}
 					onLoad={onLoad}
+					persistenceKey="test"
+					rows={mockRows}
 					totalCount={3}
 				/>,
 			);
@@ -458,7 +735,15 @@ describe('DataTable', () => {
 
 		it('should not render header when not provided', async () => {
 			render(
-				<DataTable<TestRow> columns={mockColumns} data={mockData} i18n={i18n} onLoad={onLoad} totalCount={3} />,
+				<DataTable<TestRow>
+					columns={mockColumns}
+					getRowKey={getRowKey}
+					i18n={i18n}
+					onLoad={onLoad}
+					persistenceKey="test"
+					rows={mockRows}
+					totalCount={3}
+				/>,
 			);
 
 			await waitFor(() => {

@@ -1,4 +1,3 @@
-import React from 'react';
 import { userEvent } from '@testing-library/user-event';
 
 import { DateField } from './DateField.js';
@@ -21,7 +20,7 @@ describe('DateField', () => {
 
 	it('should render text when isEditing is false', () => {
 		const { container } = render(<DateField isEditing={false} value="2024-01-15T10:30:00.000Z" />);
-		expect(container.textContent).toContain('2024-01-15');
+		expect(container).toHaveTextContent('2024-01-15');
 		expect(container.querySelector('input')).not.toBeInTheDocument();
 	});
 
@@ -107,12 +106,12 @@ describe('DateField', () => {
 
 	it('should format display text correctly for date only', () => {
 		const { container } = render(<DateField dateOnly={true} isEditing={false} value="2024-01-15T10:30:00.000Z" />);
-		expect(container.textContent).toBe('2024-01-15');
+		expect(container).toHaveTextContent(/^2024-01-15$/);
 	});
 
 	it('should format display text correctly for datetime', () => {
 		const { container } = render(<DateField dateOnly={false} isEditing={false} value="2024-01-15T10:30:00.000Z" />);
-		expect(container.textContent).toMatch(/2024-01-15, \d{2}:\d{2}/);
+		expect(container).toHaveTextContent(/2024-01-15, \d{2}:\d{2}/);
 	});
 
 	it('should pass through TextField props', () => {
@@ -150,7 +149,7 @@ describe('DateField', () => {
 			<DateField isEditing={false} timeZone="Asia/Tokyo" value="2024-01-15T10:30:00.000Z" />,
 		);
 		// 10:30 UTC is 19:30 the same day in JST (UTC+9, no DST).
-		expect(container.textContent).toBe('2024-01-15, 19:30');
+		expect(container).toHaveTextContent(/^2024-01-15, 19:30$/);
 	});
 
 	it('should seed the input with the zoned wall clock', () => {
@@ -245,7 +244,7 @@ describe('DateField', () => {
 
 	it('should render blank rather than a stray comma for an empty datetime in display mode', () => {
 		const { container } = render(<DateField dateOnly={false} isEditing={false} value="" />);
-		expect(container.textContent).toBe('');
+		expect(container).toHaveTextContent(/^$/);
 	});
 
 	it('should treat a date-only value as a zone-independent calendar day', () => {
@@ -254,7 +253,7 @@ describe('DateField', () => {
 		);
 		// A date-only field names a calendar day, not an instant projected into the zone, so 20:00 UTC
 		// stays the 15th even though it is already the 16th in JST.
-		expect(container.textContent).toBe('2024-01-15');
+		expect(container).toHaveTextContent(/^2024-01-15$/);
 	});
 
 	it('should round-trip a date-only entry through UTC midnight regardless of timeZone', async () => {

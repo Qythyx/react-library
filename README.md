@@ -6,7 +6,8 @@ A reusable React component and hooks library built with TypeScript, Material-UI,
 
 ### Components
 
-- **DataTable** - Advanced table component with sorting, pagination, grouping, and persistence
+- **DataTable** - Advanced table component with sorting, pagination, grouping, and persistence. See
+  [DataTable](#datatable)
 - **DateField** - Date/datetime picker with validation
 - **NumberField** - Numeric input with decimal support
 - **ImageModal** - Full-screen image viewer
@@ -25,6 +26,121 @@ A reusable React component and hooks library built with TypeScript, Material-UI,
 - **HttpStatus** - HTTP status code enum
 - **getStatusMessage** - Convert status codes to user-friendly messages
 - **ApiResponse** - TypeScript types for API responses, with an optional caller-defined refusal reason
+
+## DataTable
+
+`DataTable` takes your records as `rows` and asks each column how to render its cell. It identifies
+each row by the key `getRowKey` returns, and uses that key for the row's React key and for
+`highlightedRowKeys`. `onRowClick` receives the row itself. Sorting and paging stay with you: the
+table reports them to `onLoad`, and you pass back the page of rows to show.
+
+```tsx
+type OfferSortKey = 'Begins' | 'ProductName';
+
+const columns: Column<Offer, OfferSortKey>[] = [
+    {
+        isSortable: true,
+        key: 'ProductName',
+        label: t('offers.product'),
+        render: offer => offer.Product.Name,
+    },
+    {
+        isSortable: true,
+        key: 'Begins',
+        label: t('offers.begins'),
+        render: offer => <DateField isEditing={false} value={offer.Begins} />,
+    },
+];
+
+<DataTable<Offer, OfferSortKey>
+    columns={columns}
+    getRowKey={offer => offer.ID}
+    highlightedRowKeys={selectedOfferID === null ? [] : [selectedOfferID]}
+    onLoad={loadOffers}
+    onRowClick={openOffer}
+    persistenceKey="offers"
+    rows={offers}
+    totalCount={total}
+/>;
+```
+
+The second type argument names the keys `onLoad` can report as `sortBy`. It defaults to
+`StringKeyOf<T>`, the record's own field names, so a table that sorts only by fields of the record
+can leave it out; its `onLoad` then takes `LoadParams<StringKeyOf<T>>`. Write it when a sort key is
+something the server or your own sort understands rather than a field of the record, like
+`'ProductName'` above. `sortBy` is absent when no column is sortable.
+
+`onLoad` is called again whenever it changes, so pass a new `onLoad` (for example from a
+`useCallback` that depends on a filter) to reload, and a stable one otherwise. An `onLoad` written
+inline in the JSX loads in an endless loop: each load sets state, which re-renders the page and
+makes a new `onLoad`.
+
+To show the rows in groups, pass `groups` instead of `rows`. Each group carries its own rows:
+
+```tsx
+<DataTable<Offer, OfferSortKey>
+    columns={columns}
+    getRowKey={offer => offer.ID}
+    groups={suppliers.map(supplier => ({
+        header: <strong>{supplier.Name}</strong>,
+        key: supplier.ID,
+        rows: offersBySupplier.get(supplier.ID) ?? [],
+    }))}
+    onLoad={loadOffers}
+    persistenceKey="offers-by-supplier"
+    totalCount={total}
+/>
+```
+
+A column's `render` is called while the table renders, so it must not call hooks. A cell that needs
+hooks goes in a component of its own, which `render` returns.
+
+### Migrating from 4.x
+
+Version 5 replaces the prebuilt cells with records and per-column `render` functions.
+
+| 4.x                                               | 5.x                                                                         |
+| ------------------------------------------------- | --------------------------------------------------------------------------- |
+| `data: (ReactElement \| string)[][]`              | `rows: readonly T[]` and a `render` on each column                          |
+| row identified by its index in `data`             | `getRowKey: (row: T) => string`                                             |
+| `highlightedRows: number[]` (indexes)             | `highlightedRowKeys: string[]` (row keys)                                   |
+| `groups` alongside `data`, `Group.rows: number[]` | `groups` instead of `rows`, `Group<T>.rows: T[]`                            |
+| `onRowClick(rowIndex)`                            | `onRowClick(row)`                                                           |
+| `Column<T>`                                       | `Column<T>`, or `Column<T, TSortKey>` for sort keys other than `T`'s fields |
+| `LoadParams<T>`                                   | `LoadParams<StringKeyOf<T>>`, or `LoadParams<TSortKey>`                     |
+| `SortableFields<T>`                               | removed; write the sort keys as `TSortKey`                                  |
+| `sortBy` always set, to the first column          | the first sortable column, absent if none                                   |
+| `persistenceKey` optional                         | `persistenceKey` required                                                   |
+
+The table above in 4.x:
+
+```tsx
+const columns: Column<OfferRow>[] = [
+    { isSortable: true, key: 'ProductName', label: t('offers.product') },
+    { isSortable: true, key: 'Begins', label: t('offers.begins') },
+];
+
+const data = offers.map(offer => [
+    offer.Product.Name,
+    <DateField isEditing={false} value={offer.Begins} />,
+]);
+
+<DataTable<OfferRow>
+    columns={columns}
+    data={data}
+    highlightedRows={offers.flatMap((offer, index) =>
+        offer.ID === selectedOfferID ? [index] : [],
+    )}
+    onLoad={loadOffers}
+    onRowClick={index => openOffer(offers[index]!)}
+    persistenceKey="offers"
+    totalCount={total}
+/>;
+```
+
+The cells move into the columns, so no JSX is built in an array literal and `react/jsx-key` no
+longer reports them. A row model kept only to name the sort keys, like `OfferRow` above, becomes the
+`OfferSortKey` union.
 
 ## Refusal reasons
 

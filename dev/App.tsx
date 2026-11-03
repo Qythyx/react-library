@@ -1,9 +1,9 @@
 import { Box, Checkbox, Stack, TextField } from '@mui/material';
 import React, { useCallback, useState } from 'react';
 
-import { Column, DataTable, DateField, LoadParams, NumberField, Thumbnail } from '../src/index.ts';
+import { Column, DataTable, DateField, LoadParams, NumberField, StringKeyOf, Thumbnail } from '../src/index.ts';
 
-type Row = { Text: string; Value: number };
+type Row = { Extra: string; ImageUrl: string; Text: string; Value: number };
 const TotalRows = 100;
 const TestImageSize = 500;
 const TestImageVariation = 200;
@@ -18,58 +18,69 @@ function App(): React.ReactElement {
 	const [isLoading, setIsLoading] = useState(false);
 	const [scrollInternally, setScrollInternally] = useState(true);
 
-	const [data, setData] = useState<(React.ReactElement | string)[][]>([]);
+	const [rows, setRows] = useState<Row[]>([]);
 
 	const columns: Column<Row>[] = [
-		{ isSortable: true, key: 'Text', label: 'Name', size: 'fill' },
-		{ align: 'right', isSortable: true, key: 'Value', label: 'Amount', size: 'minimum' },
+		{
+			isSortable: true,
+			key: 'Text',
+			label: 'Name',
+			render: row => (
+				<Stack direction="row" spacing={1} sx={{ alignItems: 'center', height: '100%' }}>
+					<Thumbnail
+						imageUrl={row.ImageUrl}
+						sx={{
+							'& img': { height: '100%', objectFit: 'cover', width: '100%' },
+							border: 'solid 1px',
+							borderColor: 'divider',
+							borderRadius: 1,
+							boxSizing: 'border-box',
+							overflow: 'hidden',
+							width: 48,
+						}}
+					/>
+					<span>
+						{row.Text} {row.Extra}
+					</span>
+				</Stack>
+			),
+			size: 'fill',
+		},
+		{
+			align: 'right',
+			isSortable: true,
+			key: 'Value',
+			label: 'Amount',
+			render: row => <Box sx={{ border: 'solid 1px', paddingY: '1em' }}>{row.Value}</Box>,
+			size: 'minimum',
+		},
 	];
 
-	const createNameCell = (index: number): React.ReactElement => {
+	const createRow = (index: number): Row => {
 		const getSize = (): number =>
 			Math.floor(Math.random() * 2 * TestImageVariation - TestImageVariation + TestImageSize);
-		const getExtra = (): string =>
-			Array.from({ length: Math.floor(Math.random() * TestExtraWords + 1) })
+		return {
+			Extra: Array.from({ length: Math.floor(Math.random() * TestExtraWords + 1) })
 				.map(() => '#'.repeat(Math.floor(Math.random() * TestExtraWordLength + 1)))
-				.join(' ');
-		return (
-			<Stack direction="row" spacing={1} sx={{ alignItems: 'center', height: '100%' }}>
-				<Thumbnail
-					imageUrl={`https://picsum.photos/seed/${index + 1}/${getSize()}/${getSize()}`}
-					sx={{
-						'& img': { height: '100%', objectFit: 'cover', width: '100%' },
-						border: 'solid 1px',
-						borderColor: 'divider',
-						borderRadius: 1,
-						boxSizing: 'border-box',
-						overflow: 'hidden',
-						width: 48,
-					}}
-				/>
-				<span>
-					foo_{index} {getExtra()}
-				</span>
-			</Stack>
-		);
+				.join(' '),
+			ImageUrl: `https://picsum.photos/seed/${index + 1}/${getSize()}/${getSize()}`,
+			Text: `foo_${index}`,
+			Value: index,
+		};
 	};
 
 	const loadData = useCallback(
-		(params: LoadParams<Row>): void => {
+		(params: LoadParams<StringKeyOf<Row>>): void => {
 			const start = (params.currentPage - 1) * params.pageSize;
 			void new Promise(() => {
 				setIsLoading(true);
 				setTimeout(() => {
 					if (isEmpty) {
-						setData([]);
+						setRows([]);
 					} else if (params.showAll) {
-						setData(Array.from({ length: TotalRows }).map((_, i) => [createNameCell(i), `${i}`]));
+						setRows(Array.from({ length: TotalRows }).map((_, i) => createRow(i)));
 					} else {
-						setData(
-							Array.from({ length: params.pageSize }).map((_, i) => [
-								createNameCell(i + start),
-								<Box sx={{ border: 'solid 1px', paddingY: '1em' }}>{i + start}</Box>,
-							]),
-						);
+						setRows(Array.from({ length: params.pageSize }).map((_, i) => createRow(i + start)));
 					}
 					setIsLoading(false);
 				}, 1000);
@@ -87,10 +98,12 @@ function App(): React.ReactElement {
 			<h2>DataTable</h2>
 			<DataTable<Row>
 				columns={columns}
-				data={data}
+				getRowKey={row => row.Text}
 				initialPageSize={5}
 				isLoading={isLoading}
 				onLoad={loadData}
+				persistenceKey="demo"
+				rows={rows}
 				scrollInternally={scrollInternally}
 				totalCount={100}
 			/>
