@@ -85,5 +85,5 @@
 		"typecheck": "tsc --noEmit && tsc -p tsconfig.dev.json"
 	},
 	"type": "module",
-	"version": "4.1.0"
+	"version": "5.0.0"
 }
